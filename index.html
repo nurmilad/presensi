@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Presensi Guru - Absensi Kamera</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #f1f5f9;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .btn-admin {
+            background: #1e293b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .btn-admin:hover {
+            background: #0f172a;
+            transform: scale(0.97);
+        }
+
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 28px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #0f172a;
+            border-left: 5px solid #3b82f6;
+            padding-left: 12px;
+        }
+
+        /* Dropdown */
+        select {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 16px;
+            border-radius: 60px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            cursor: pointer;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+        }
+
+        /* Kamera */
+        .camera-wrapper {
+            position: relative;
+            background: #000;
+            border-radius: 24px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+            background: #0f172a;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        .btn-camera {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 12px;
+            margin-right: 10px;
+            transition: 0.2s;
+        }
+
+        .btn-switch {
+            background: #475569;
+        }
+
+        .btn-capture {
+            background: #10b981;
+            font-size: 18px;
+            padding: 14px 24px;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        /* Status */
+        .status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 60px;
+            background: #f8fafc;
+            text-align: center;
+            font-size: 14px;
+            color: #334155;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            .btn-capture { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <button class="btn-admin" id="adminBtn">🔐 ADMIN</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">📋 Pilih Guru</div>
+        <select id="guruSelect">
+            <option value="">-- Memuat daftar guru --</option>
+        </select>
+    </div>
+
+    <div class="card">
+        <div class="card-title">📸 Presensi Wajah</div>
+        <div class="camera-wrapper">
+            <video id="video" autoplay playsinline></video>
+        </div>
+        <canvas id="canvas" width="640" height="480"></canvas>
+        <div class="btn-group">
+            <button class="btn-camera btn-switch" id="switchCameraBtn">🔄 Ganti Kamera</button>
+            <button class="btn-camera btn-capture" id="captureBtn">📸 Ambil Foto & Absen</button>
+        </div>
+        <div id="statusMsg" class="status">Siap melakukan presensi</div>
+    </div>
+</div>
+
+<script>
+    // ----------------------------- KONFIGURASI -----------------------------
+    const firebaseConfig = {
+        apiKey: "AIzaSyA-1YwxMQCOaA15yGn5E_wJlaxna64qhNk",
+        authDomain: "ceklokguru.firebaseapp.com",
+        projectId: "ceklokguru",
+        storageBucket: "ceklokguru.firebasestorage.app",
+        messagingSenderId: "583253273794",
+        appId: "1:583253273794:web:d7d16a57b117baa0de1f5b"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Cloudinary config (ganti UPLOAD_PRESET dengan preset unsigned yang sudah dibuat)
+    const CLOUD_NAME = "dw63zuldz";
+    const UPLOAD_PRESET = "presensi_guru";   // 👈 WAJIB buat upload preset di Cloudinary dengan folder "presensi_guru"
+    const FOLDER_CLOUD = "presensi_guru";
+
+    // DOM elements
+    const guruSelect = document.getElementById('guruSelect');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const switchBtn = document.getElementById('switchCameraBtn');
+    const statusDiv = document.getElementById('statusMsg');
+
+    // Kamera
+    let currentStream = null;
+    let usingFront = true;  // true = depan (user), false = belakang (environment)
+    
+    // Data guru
+    let guruList = [];
+
+    // ----------------------------- LOAD GURU -----------------------------
+    async function loadGuru() {
+        try {
+            const snapshot = await db.collection('guru').orderBy('nama').get();
+            guruList = [];
+            guruSelect.innerHTML = '<option value="">-- Pilih Guru --</option>';
+            snapshot.forEach(doc => {
+                const guru = { id: doc.id, nama: doc.data().nama };
+                guruList.push(guru);
+                const option = document.createElement('option');
+                option.value = guru.id;
+                option.textContent = guru.nama;
+                guruSelect.appendChild(option);
+            });
+            if (guruList.length === 0) {
+                statusDiv.innerHTML = "⚠️ Belum ada data guru. Masuk sebagai admin untuk menambah guru.";
+                statusDiv.classList.add('error');
+            } else {
+                statusDiv.innerHTML = "✅ Pilih nama, lalu klik 'Ambil Foto & Absen'";
+                statusDiv.classList.remove('error');
+            }
+        } catch (err) {
+            console.error(err);
+            statusDiv.innerHTML = "Gagal memuat data guru: " + err.message;
+            statusDiv.classList.add('error');
+        }
+    }
+
+    // ----------------------------- KAMERA -----------------------------
+    async function startCamera(faceMode = 'user') {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+        const constraints = {
+            video: { facingMode: { exact: faceMode } }
+        };
+        // fallback jika exact tidak ditemukan
+        try {
+            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (err) {
+            // coba tanpa exact
+            const fallbackConstraints = { video: { facingMode: faceMode } };
+            currentStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        }
+        video.srcObject = currentStream;
+        await video.play();
+    }
+
+    async function switchCamera() {
+        usingFront = !usingFront;
+        const mode = usingFront ? 'user' : 'environment';
+        await startCamera(mode);
+    }
+
+    // ----------------------------- KOMPRESI FOTO (max 100kb) -----------------------------
+    function compressImageToBlob(canvas, maxSizeKB = 100) {
+        return new Promise((resolve) => {
+            let quality = 0.85;
+            const tryCompress = () => {
+                canvas.toBlob(blob => {
+                    if (blob.size / 1024 <= maxSizeKB || quality <= 0.2) {
+                        resolve(blob);
+                    } else {
+                        quality -= 0.1;
+                        tryCompress();
+                    }
+                }, 'image/jpeg', quality);
+            };
+            tryCompress();
+        });
+    }
+
+    // Tambahkan timestamp teks ke foto
+    function addTimestampToCanvas(sourceCanvas) {
+        const ctx = sourceCanvas.getContext('2d');
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID');
+        ctx.font = 'bold 20px monospace';
+        ctx.fillStyle = 'white';
+        ctx.shadowColor = 'black';
+        ctx.shadowBlur = 6;
+        ctx.fillText(dateStr, 15, 45);
+        ctx.shadowBlur = 0;
+        return sourceCanvas;
+    }
+
+    // ----------------------------- UPLOAD KE CLOUDINARY -----------------------------
+    async function uploadToCloudinary(blob) {
+        const formData = new FormData();
+        formData.append('file', blob, 'presensi.jpg');
+        formData.append('upload_preset', UPLOAD_PRESET);
+        formData.append('folder', FOLDER_CLOUD);
+        
+        const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+        const response = await fetch(url, { method: 'POST', body: formData });
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Cloudinary error: ${errText}`);
+        }
+        const data = await response.json();
+        return data.secure_url;
+    }
+
+    // ----------------------------- CEK SUDAH ABSEN HARI INI -----------------------------
+    async function sudahAbsenHariIni(guruId) {
+        const today = new Date().toISOString().slice(0,10);
+        const q = await db.collection('presensi')
+            .where('guruId', '==', guruId)
+            .where('tanggal', '==', today)
+            .limit(1)
+            .get();
+        return !q.empty;
+    }
+
+    // ----------------------------- PROSES ABSEN -----------------------------
+    async function prosesAbsen() {
+        const guruId = guruSelect.value;
+        if (!guruId) {
+            statusDiv.innerHTML = "❌ Silakan pilih guru terlebih dahulu!";
+            statusDiv.classList.add('error');
+            return;
+        }
+        const guruNama = guruSelect.options[guruSelect.selectedIndex].text;
+
+        // Cek apakah sudah absen hari ini
+        const sudahAbsen = await sudahAbsenHariIni(guruId);
+        if (sudahAbsen) {
+            statusDiv.innerHTML = "⛔ Gagal: Guru ini sudah melakukan presensi hari ini!";
+            statusDiv.classList.add('error');
+            return;
+        }
+
+        statusDiv.innerHTML = "📷 Mengambil foto...";
+        statusDiv.classList.remove('error','success');
+
+        // Gambar dari video ke canvas
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Tambahkan timestamp di foto
+        addTimestampToCanvas(canvas);
+        
+        // Kompresi
+        const compressedBlob = await compressImageToBlob(canvas, 100);
+        if (compressedBlob.size / 1024 > 100) {
+            statusDiv.innerHTML = "⚠️ Foto masih di atas 100kb, tapi akan tetap diupload.";
+        }
+        
+        statusDiv.innerHTML = "☁️ Mengunggah foto ke Cloudinary...";
+        let fotoUrl = "";
+        try {
+            fotoUrl = await uploadToCloudinary(compressedBlob);
+        } catch (err) {
+            statusDiv.innerHTML = "❌ Gagal upload foto: " + err.message;
+            statusDiv.classList.add('error');
+            return;
+        }
+
+        // Simpan ke Firestore
+        const now = new Date();
+        const tanggal = now.toISOString().slice(0,10);
+        const jamMasuk = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute:'2-digit', second:'2-digit' });
+        
+        const dataPresensi = {
+            guruId: guruId,
+            guruNama: guruNama,
+            tanggal: tanggal,
+            jamMasuk: jamMasuk,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            fotoUrl: fotoUrl
+        };
+        
+        try {
+            await db.collection('presensi').add(dataPresensi);
+            statusDiv.innerHTML = "✅ Presensi berhasil! " + guruNama + " jam " + jamMasuk;
+            statusDiv.classList.add('success');
+            // refresh tampilan tidak perlu reload
+        } catch (err) {
+            statusDiv.innerHTML = "❌ Gagal menyimpan ke database: " + err.message;
+            statusDiv.classList.add('error');
+        }
+    }
+
+    // ----------------------------- VALIDASI ADMIN (password default admin123) -----------------------------
+    document.getElementById('adminBtn').addEventListener('click', () => {
+        const pwd = prompt("Masukkan password admin:");
+        if (pwd === "admin123") {
+            // Simpan sesi sederhana (localStorage)
+            localStorage.setItem('adminLogged', 'true');
+            window.location.href = "admin.html";
+        } else {
+            alert("Password salah!");
+        }
+    });
+
+    // ----------------------------- INIT -----------------------------
+    async function init() {
+        await loadGuru();
+        // Request ijin kamera
+        try {
+            await startCamera('user');
+        } catch (err) {
+            statusDiv.innerHTML = "❌ Akses kamera ditolak atau tidak tersedia.";
+            statusDiv.classList.add('error');
+        }
+        captureBtn.addEventListener('click', prosesAbsen);
+        switchBtn.addEventListener('click', switchCamera);
+    }
+    
+    init();
+</script>
+</body>
+</html>
