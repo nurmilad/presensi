@@ -17,22 +17,88 @@
         .card { background: white; border-radius: 24px; padding: 14px; margin-bottom: 12px; border: 1px solid #e2e8f0; }
         .card-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; border-left: 3px solid #3b82f6; padding-left: 8px; }
         select { width: 100%; padding: 12px; font-size: 0.9rem; border-radius: 60px; border: 1px solid #cbd5e1; background: white; }
-        .camera-wrapper { background: #000; border-radius: 20px; overflow: hidden; margin: 6px 0; }
-        video { width: 100%; height: auto; display: block; }
+        .camera-wrapper {
+            position: relative;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 6px 0;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
         canvas { display: none; }
-        .btn-group { display: flex; gap: 12px; margin-top: 10px; justify-content: center; }
-        .btn-icon { background: #3b82f6; border: none; font-size: 1.8rem; padding: 12px; border-radius: 60px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; font-weight: bold; cursor: pointer; }
-        .btn-switch-icon { background: #475569; }
-        .btn-capture-icon { background: #10b981; }
-        .btn-icon span { font-size: 0.9rem; }
-        .status { margin-top: 12px; padding: 8px; border-radius: 60px; background: #f8fafc; text-align: center; font-size: 0.75rem; }
+        
+        /* Overlay tombol di atas video */
+        .camera-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            padding: 15px;
+            background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+            pointer-events: none; /* biar tombol di dalamnya bisa diklik */
+        }
+        .btn-capture-overlay {
+            pointer-events: auto;
+            background: #10b981;
+            border: none;
+            font-size: 2.2rem;
+            padding: 12px 24px;
+            border-radius: 60px;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: 0.1s;
+            width: auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-capture-overlay:active {
+            transform: scale(0.95);
+        }
+        .btn-switch-overlay {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            pointer-events: auto;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            border: none;
+            font-size: 1.6rem;
+            padding: 8px;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+        .btn-switch-overlay:active {
+            background: rgba(0,0,0,0.8);
+        }
+        /* Sembunyikan tombol lama */
+        .btn-group {
+            display: none;
+        }
+        .status {
+            margin-top: 12px;
+            padding: 8px;
+            border-radius: 60px;
+            background: #f8fafc;
+            text-align: center;
+            font-size: 0.75rem;
+        }
         .success { background: #dcfce7; color: #166534; }
         .error { background: #fee2e2; color: #991b1b; }
-        .share-area { margin-top: 10px; text-align: center; }
-        .btn-share { background: #25D366; color: white; border: none; padding: 10px 18px; border-radius: 40px; font-size: 0.85rem; font-weight: bold; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; width: 100%; justify-content: center; }
-        .hidden { display: none; }
-        .toast { position: fixed; bottom: 20px; left: 20px; right: 20px; background: #1e293b; color: white; text-align: center; padding: 12px; border-radius: 40px; font-size: 0.8rem; z-index: 1000; animation: fadeOut 2s ease forwards; }
-        @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
     </style>
 </head>
 <body>
@@ -50,16 +116,15 @@
     </div>
     <div class="card">
         <div class="card-title">📸 Presensi</div>
-        <div class="camera-wrapper"><video id="video" autoplay playsinline muted></video></div>
+        <div class="camera-wrapper">
+            <video id="video" autoplay playsinline muted></video>
+            <button class="btn-switch-overlay" id="switchCameraOverlay">🔄</button>
+            <div class="camera-overlay">
+                <button class="btn-capture-overlay" id="captureOverlay">📷</button>
+            </div>
+        </div>
         <canvas id="canvas" width="640" height="480"></canvas>
-        <div class="btn-group">
-            <button class="btn-icon btn-switch-icon" id="switchCameraBtn">🔄 <span>Ganti</span></button>
-            <button class="btn-icon btn-capture-icon" id="captureBtn">📷 <span>Absen</span></button>
-        </div>
         <div id="statusMsg" class="status">Siap presensi</div>
-        <div id="shareContainer" class="share-area hidden">
-            <button id="shareBtn" class="btn-share">📤 Bagikan ke WhatsApp</button>
-        </div>
     </div>
 </div>
 <script>
@@ -75,31 +140,17 @@
     const db = firebase.firestore();
     const CLOUD_NAME = "dw63zuldz";
     const UPLOAD_PRESET = "presensi_guru";
-    const FOLDER_CLOUD = "presensi_guru";
 
     const guruSelect = document.getElementById('guruSelect');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const captureBtn = document.getElementById('captureBtn');
-    const switchBtn = document.getElementById('switchCameraBtn');
+    const captureBtn = document.getElementById('captureOverlay');
+    const switchBtn = document.getElementById('switchCameraOverlay');
     const statusDiv = document.getElementById('statusMsg');
     const liveDateTime = document.getElementById('liveDateTime');
-    const shareContainer = document.getElementById('shareContainer');
-    const shareBtn = document.getElementById('shareBtn');
 
     let currentStream = null;
     let usingFront = true;
-    let lastFotoUrl = "";
-    let lastGuruNama = "";
-    let lastJam = "";
-
-    function showToast(msg) {
-        let toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerText = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2500);
-    }
 
     function updateDateTime() {
         const now = new Date();
@@ -121,7 +172,7 @@
                 guruSelect.appendChild(option);
             });
             if (snapshot.empty) statusDiv.innerHTML = "⚠️ Tambah guru via admin";
-            else statusDiv.innerHTML = "✅ Pilih guru & tekan Absen";
+            else statusDiv.innerHTML = "✅ Pilih guru & tekan tombol kamera";
         } catch (err) { statusDiv.innerHTML = "Gagal load guru"; }
     }
 
@@ -188,7 +239,6 @@
         const formData = new FormData();
         formData.append('file', blob, 'presensi.jpg');
         formData.append('upload_preset', UPLOAD_PRESET);
-        formData.append('folder', FOLDER_CLOUD);
         const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
         if (!res.ok) throw new Error('Upload gagal');
         const data = await res.json();
@@ -210,7 +260,6 @@
         }
         statusDiv.innerHTML = "📷 Ambil foto & lokasi...";
         statusDiv.classList.remove('error','success');
-        shareContainer.classList.add('hidden');
 
         const context = canvas.getContext('2d');
         canvas.width = video.videoWidth;
@@ -232,37 +281,15 @@
             await db.collection('presensi').add(dataPresensi);
             statusDiv.innerHTML = `✅ Presensi berhasil! ${guruNama} ${jamMasuk}`;
             statusDiv.classList.add('success');
-            lastFotoUrl = fotoUrl;
-            lastGuruNama = guruNama;
-            lastJam = jamMasuk;
-            shareContainer.classList.remove('hidden');
-            showToast("✨ Klik tombol hijau untuk bagikan ke WhatsApp");
         } catch (err) { statusDiv.innerHTML = "❌ Gagal simpan: " + err.message; statusDiv.classList.add('error'); }
-    }
-
-    async function shareToWA() {
-        if (!lastFotoUrl) {
-            showToast("Tidak ada data untuk dibagikan");
-            return;
-        }
-        const text = `✅ *Presensi Guru*%0A📛 ${lastGuruNama}%0A🕒 ${lastJam}%0A📅 ${new Date().toLocaleDateString('id-ID')}%0A📍 Lokasi & timestamp ada di foto%0A📸 Link foto: ${lastFotoUrl}`;
-        const waUrl = `https://wa.me/?text=${text}`;
-        // Cara paling aman: buka jendela baru dengan target _blank, tapi banyak browser mobile mengizinkan
-        window.open(waUrl, '_blank');
-        // Fallback jika tidak terbuka
-        setTimeout(() => {
-            if (confirm("Tidak bisa membuka WhatsApp? Salin teks ke clipboard?")) {
-                navigator.clipboard.writeText(decodeURIComponent(text).replace(/\+/g, ' '));
-                showToast("Teks disalin, tempel di WhatsApp");
-            }
-        }, 500);
     }
 
     document.getElementById('laporanIconBtn').onclick = () => window.location.href = 'laporan.html';
     document.getElementById('adminIconBtn').onclick = () => { let pwd = prompt("Password admin:"); if(pwd==="admin123") { localStorage.setItem('adminLogged','true'); window.location.href="admin.html"; } else alert("Salah!"); };
-    shareBtn.onclick = shareToWA;
+    captureBtn.onclick = prosesAbsen;
+    switchBtn.onclick = switchCamera;
 
-    async function init() { await loadGuru(); try { await startCamera('user'); } catch(e) { statusDiv.innerHTML = "Izin kamera ditolak"; } captureBtn.onclick = prosesAbsen; switchBtn.onclick = switchCamera; }
+    async function init() { await loadGuru(); try { await startCamera('user'); } catch(e) { statusDiv.innerHTML = "Izin kamera ditolak"; } }
     init();
 </script>
 </body>
