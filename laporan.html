@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Presensi Guru</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui; }
+        body { background: #f1f5f9; padding: 20px; font-size: 11px; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .no-print { display: none; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #aaa; padding: 6px; }
+            .container { max-width: 100%; margin: 0; }
+            button, .filter-bar { display: none; }
+            .card { box-shadow: none; padding: 0; }
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .filter-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 20px; }
+        .filter-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-weight: bold; color: #334155; }
+        select, input, button { padding: 8px 12px; border-radius: 40px; border: 1px solid #cbd5e1; font-size: 12px; }
+        button { background: #3b82f6; color: white; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #2563eb; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 11px; }
+        th, td { border: 1px solid #d1d5db; padding: 8px 6px; text-align: left; vertical-align: middle; }
+        th { background: #eef2ff; }
+        .foto-thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 8px; background: #f3f4f6; cursor: pointer; }
+        .btn-print { background: #10b981; margin-right: 8px; }
+        .back-link { display: inline-block; margin-top: 15px; background: #475569; padding: 6px 18px; border-radius: 30px; color: white; text-decoration: none; font-size: 12px; }
+        h2 { margin-bottom: 16px; border-left: 5px solid #3b82f6; padding-left: 12px; }
+        @media (max-width: 700px) { td, th { font-size: 10px; } .foto-thumb { width: 35px; height: 35px; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card no-print">
+        <h2>📊 Laporan Presensi Per Bulan</h2>
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label>Bulan</label>
+                <select id="bulanSelect"></select>
+            </div>
+            <div class="filter-group">
+                <label>Tahun</label>
+                <select id="tahunSelect"></select>
+            </div>
+            <button id="filterBtn">🔍 Tampilkan</button>
+            <button id="printBtn" class="btn-print">🖨 Cetak (A4 Landscape)</button>
+            <a href="index.html" class="back-link">← Kembali</a>
+        </div>
+    </div>
+    <div class="card" id="laporanCard">
+        <div id="laporanTable">
+            <p style="text-align:center;">Pilih bulan dan tahun untuk menampilkan laporan.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyA-1YwxMQCOaA15yGn5E_wJlaxna64qhNk",
+        authDomain: "ceklokguru.firebaseapp.com",
+        projectId: "ceklokguru",
+        storageBucket: "ceklokguru.firebasestorage.app",
+        messagingSenderId: "583253273794",
+        appId: "1:583253273794:web:d7d16a57b117baa0de1f5b"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Generate pilihan bulan & tahun
+    const bulanSelect = document.getElementById('bulanSelect');
+    const tahunSelect = document.getElementById('tahunSelect');
+    const filterBtn = document.getElementById('filterBtn');
+    const printBtn = document.getElementById('printBtn');
+    const laporanDiv = document.getElementById('laporanTable');
+
+    const bulanNama = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+    for (let i = 0; i < 12; i++) {
+        let opt = document.createElement('option');
+        opt.value = (i+1).toString().padStart(2,'0');
+        opt.textContent = bulanNama[i];
+        bulanSelect.appendChild(opt);
+    }
+    const tahunSekarang = new Date().getFullYear();
+    for (let y = tahunSekarang-2; y <= tahunSekarang+1; y++) {
+        let opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        tahunSelect.appendChild(opt);
+    }
+    bulanSelect.value = new Date().getMonth()+1;
+    tahunSelect.value = tahunSekarang;
+
+    async function loadLaporan() {
+        const bulan = bulanSelect.value;
+        const tahun = tahunSelect.value;
+        const startDate = `${tahun}-${bulan}-01`;
+        const lastDay = new Date(tahun, bulan, 0).getDate();
+        const endDate = `${tahun}-${bulan}-${lastDay}`;
+        
+        const snapshot = await db.collection('presensi')
+            .where('tanggal', '>=', startDate)
+            .where('tanggal', '<=', endDate)
+            .orderBy('tanggal', 'desc')
+            .orderBy('jamMasuk', 'desc')
+            .get();
+        
+        if (snapshot.empty) {
+            laporanDiv.innerHTML = `<p style="text-align:center;">✨ Tidak ada data presensi untuk bulan ${bulanNama[bulan-1]} ${tahun}</p>`;
+            return;
+        }
+        
+        let html = `<table style="width:100%;">
+            <thead>
+                <tr><th>No</th><th>Guru</th><th>Tanggal</th><th>Jam Masuk</th><th>Foto Presensi</th></tr>
+            </thead>
+            <tbody>`;
+        let no = 1;
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const fotoHtml = data.fotoUrl ? `<img src="${data.fotoUrl}" class="foto-thumb" onclick="window.open('${data.fotoUrl}')" onerror="this.src='https://placehold.co/60x60?text=404'">` : '-';
+            html += `<tr>
+                <td>${no++}</td>
+                <td>${escapeHtml(data.guruNama || 'Tidak diketahui')}</td>
+                <td>${data.tanggal}</td>
+                <td>${data.jamMasuk}</td>
+                <td>${fotoHtml}</td>
+            </tr>`;
+        });
+        html += `</tbody></table>`;
+        laporanDiv.innerHTML = html;
+    }
+    
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    
+    filterBtn.addEventListener('click', loadLaporan);
+    printBtn.addEventListener('click', () => { window.print(); });
+    
+    // Saat awal load tampilkan data bulan ini
+    loadLaporan();
+</script>
+</body>
+</html>
