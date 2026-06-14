@@ -29,26 +29,46 @@
         /* Header */
         .header {
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
             margin-bottom: 20px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 60px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
-
-        .btn-admin {
+        .datetime {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.9rem;
+        }
+        .btn-admin, .btn-laporan {
             background: #1e293b;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 8px 18px;
             border-radius: 40px;
             font-weight: bold;
             cursor: pointer;
             font-size: 14px;
             transition: 0.2s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-decoration: none;
+            display: inline-block;
         }
-
+        .btn-laporan {
+            background: #10b981;
+        }
+        .btn-laporan:hover {
+            background: #059669;
+        }
         .btn-admin:hover {
             background: #0f172a;
-            transform: scale(0.97);
+        }
+        .right-buttons {
+            display: flex;
+            gap: 10px;
         }
 
         /* Card */
@@ -168,13 +188,19 @@
         @media (max-width: 600px) {
             body { padding: 12px; }
             .btn-capture { width: 100%; }
+            .header { flex-direction: column; align-items: stretch; }
+            .right-buttons { justify-content: flex-end; }
         }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <button class="btn-admin" id="adminBtn">🔐 ADMIN</button>
+        <div class="datetime" id="liveDateTime">Memuat waktu...</div>
+        <div class="right-buttons">
+            <a href="laporan.html" class="btn-laporan">📊 Laporan Presensi</a>
+            <button class="btn-admin" id="adminBtn">🔐 ADMIN</button>
+        </div>
     </div>
 
     <div class="card">
@@ -185,14 +211,14 @@
     </div>
 
     <div class="card">
-        <div class="card-title">📸 Presensi Wajah</div>
+        <div class="card-title">📸 Presensi Wajah + Lokasi</div>
         <div class="camera-wrapper">
             <video id="video" autoplay playsinline></video>
         </div>
         <canvas id="canvas" width="640" height="480"></canvas>
         <div class="btn-group">
             <button class="btn-camera btn-switch" id="switchCameraBtn">🔄 Ganti Kamera</button>
-            <button class="btn-camera btn-capture" id="captureBtn">📸 Ambil Foto & Absen</button>
+            <button class="btn-camera btn-capture" id="captureBtn">📍 Ambil Foto & Absen (dengan lokasi)</button>
         </div>
         <div id="statusMsg" class="status">Siap melakukan presensi</div>
     </div>
@@ -214,7 +240,7 @@
 
     // Cloudinary config (ganti UPLOAD_PRESET dengan preset unsigned yang sudah dibuat)
     const CLOUD_NAME = "dw63zuldz";
-    const UPLOAD_PRESET = "presensi_guru";   // 👈 WAJIB buat upload preset di Cloudinary dengan folder "presensi_guru"
+    const UPLOAD_PRESET = "presensi_guru";   // 👈 WAJIB buat upload preset di Cloudinary
     const FOLDER_CLOUD = "presensi_guru";
 
     // DOM elements
@@ -224,6 +250,7 @@
     const captureBtn = document.getElementById('captureBtn');
     const switchBtn = document.getElementById('switchCameraBtn');
     const statusDiv = document.getElementById('statusMsg');
+    const liveDateTime = document.getElementById('liveDateTime');
 
     // Kamera
     let currentStream = null;
@@ -231,6 +258,16 @@
     
     // Data guru
     let guruList = [];
+
+    // ----------------------------- UPDATE JAM REAL TIME -----------------------------
+    function updateDateTime() {
+        const now = new Date();
+        const hari = now.toLocaleDateString('id-ID', { weekday: 'long', year:'numeric', month:'long', day:'numeric' });
+        const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+        liveDateTime.innerHTML = `📅 ${hari} | 🕒 ${jam}`;
+    }
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
 
     // ----------------------------- LOAD GURU -----------------------------
     async function loadGuru() {
@@ -250,7 +287,7 @@
                 statusDiv.innerHTML = "⚠️ Belum ada data guru. Masuk sebagai admin untuk menambah guru.";
                 statusDiv.classList.add('error');
             } else {
-                statusDiv.innerHTML = "✅ Pilih nama, lalu klik 'Ambil Foto & Absen'";
+                statusDiv.innerHTML = "✅ Pilih nama, lalu klik 'Ambil Foto & Absen' (lokasi akan otomatis diambil)";
                 statusDiv.classList.remove('error');
             }
         } catch (err) {
@@ -268,11 +305,9 @@
         const constraints = {
             video: { facingMode: { exact: faceMode } }
         };
-        // fallback jika exact tidak ditemukan
         try {
             currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         } catch (err) {
-            // coba tanpa exact
             const fallbackConstraints = { video: { facingMode: faceMode } };
             currentStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
         }
@@ -304,18 +339,63 @@
         });
     }
 
-    // Tambahkan timestamp teks ke foto
-    function addTimestampToCanvas(sourceCanvas) {
+    // ----------------------------- DAPATKAN LOKASI (Promise) -----------------------------
+    function getCurrentLocation() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error("Geolocation tidak didukung browser ini"));
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    resolve({ lat, lng, accuracy: position.coords.accuracy });
+                },
+                (err) => {
+                    reject(new Error("Gagal mendapatkan lokasi: " + err.message));
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        });
+    }
+
+    // ----------------------------- TAMBAHKAN TEKS TIMESTAMP + LOKASI KE CANVAS -----------------------------
+    async function addMetadataToCanvas(sourceCanvas) {
         const ctx = sourceCanvas.getContext('2d');
         const now = new Date();
         const dateStr = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID');
+        
+        // Teks timestamp (baris 1)
         ctx.font = 'bold 20px monospace';
         ctx.fillStyle = 'white';
         ctx.shadowColor = 'black';
         ctx.shadowBlur = 6;
-        ctx.fillText(dateStr, 15, 45);
+        ctx.fillText(`📅 ${dateStr}`, 15, 45);
+        
+        // Coba dapatkan lokasi (dengan promise, dijalankan sebelum teks digambar)
+        let locationText = '';
+        try {
+            const loc = await getCurrentLocation();
+            locationText = `📍 ${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)} (${Math.round(loc.accuracy)}m)`;
+        } catch (err) {
+            console.warn(err.message);
+            locationText = '📍 Lokasi tidak tersedia';
+        }
+        ctx.fillText(locationText, 15, 80);
         ctx.shadowBlur = 0;
         return sourceCanvas;
+    }
+
+    // ----------------------------- CEK SUDAH ABSEN HARI INI -----------------------------
+    async function sudahAbsenHariIni(guruId) {
+        const today = new Date().toISOString().slice(0,10);
+        const q = await db.collection('presensi')
+            .where('guruId', '==', guruId)
+            .where('tanggal', '==', today)
+            .limit(1)
+            .get();
+        return !q.empty;
     }
 
     // ----------------------------- UPLOAD KE CLOUDINARY -----------------------------
@@ -335,17 +415,6 @@
         return data.secure_url;
     }
 
-    // ----------------------------- CEK SUDAH ABSEN HARI INI -----------------------------
-    async function sudahAbsenHariIni(guruId) {
-        const today = new Date().toISOString().slice(0,10);
-        const q = await db.collection('presensi')
-            .where('guruId', '==', guruId)
-            .where('tanggal', '==', today)
-            .limit(1)
-            .get();
-        return !q.empty;
-    }
-
     // ----------------------------- PROSES ABSEN -----------------------------
     async function prosesAbsen() {
         const guruId = guruSelect.value;
@@ -356,7 +425,7 @@
         }
         const guruNama = guruSelect.options[guruSelect.selectedIndex].text;
 
-        // Cek apakah sudah absen hari ini
+        // Cek absen ganda
         const sudahAbsen = await sudahAbsenHariIni(guruId);
         if (sudahAbsen) {
             statusDiv.innerHTML = "⛔ Gagal: Guru ini sudah melakukan presensi hari ini!";
@@ -364,7 +433,7 @@
             return;
         }
 
-        statusDiv.innerHTML = "📷 Mengambil foto...";
+        statusDiv.innerHTML = "📷 Mengambil foto & mendapatkan lokasi...";
         statusDiv.classList.remove('error','success');
 
         // Gambar dari video ke canvas
@@ -373,14 +442,16 @@
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        // Tambahkan timestamp di foto
-        addTimestampToCanvas(canvas);
+        // Tambahkan timestamp dan lokasi (proses async, akan menunggu lokasi)
+        try {
+            await addMetadataToCanvas(canvas);
+        } catch (err) {
+            // Tetap lanjut meskipun lokasi gagal, teks error sudah ditulis
+            console.warn(err);
+        }
         
         // Kompresi
         const compressedBlob = await compressImageToBlob(canvas, 100);
-        if (compressedBlob.size / 1024 > 100) {
-            statusDiv.innerHTML = "⚠️ Foto masih di atas 100kb, tapi akan tetap diupload.";
-        }
         
         statusDiv.innerHTML = "☁️ Mengunggah foto ke Cloudinary...";
         let fotoUrl = "";
@@ -408,20 +479,18 @@
         
         try {
             await db.collection('presensi').add(dataPresensi);
-            statusDiv.innerHTML = "✅ Presensi berhasil! " + guruNama + " jam " + jamMasuk;
+            statusDiv.innerHTML = "✅ Presensi berhasil! " + guruNama + " jam " + jamMasuk + " (lokasi tercantum di foto)";
             statusDiv.classList.add('success');
-            // refresh tampilan tidak perlu reload
         } catch (err) {
             statusDiv.innerHTML = "❌ Gagal menyimpan ke database: " + err.message;
             statusDiv.classList.add('error');
         }
     }
 
-    // ----------------------------- VALIDASI ADMIN (password default admin123) -----------------------------
+    // ----------------------------- ADMIN -----------------------------
     document.getElementById('adminBtn').addEventListener('click', () => {
         const pwd = prompt("Masukkan password admin:");
         if (pwd === "admin123") {
-            // Simpan sesi sederhana (localStorage)
             localStorage.setItem('adminLogged', 'true');
             window.location.href = "admin.html";
         } else {
@@ -432,7 +501,6 @@
     // ----------------------------- INIT -----------------------------
     async function init() {
         await loadGuru();
-        // Request ijin kamera
         try {
             await startCamera('user');
         } catch (err) {
