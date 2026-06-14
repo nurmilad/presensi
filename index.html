@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Presensi Guru - Absensi Kamera</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Presensi Guru</title>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -12,215 +12,223 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
         }
 
         body {
             background: #f1f5f9;
             min-height: 100vh;
-            padding: 20px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 550px;
+            width: 100%;
             margin: 0 auto;
         }
 
-        /* Header */
+        /* Header minimal */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
             background: white;
-            padding: 12px 20px;
-            border-radius: 60px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 8px 16px;
+            border-radius: 40px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
         }
         .datetime {
-            font-weight: 600;
+            font-size: 0.75rem;
+            font-weight: 500;
             color: #1e293b;
-            font-size: 0.9rem;
+            background: #f1f5f9;
+            padding: 4px 10px;
+            border-radius: 30px;
         }
-        .btn-admin, .btn-laporan {
-            background: #1e293b;
-            color: white;
+        .icon-btn {
+            background: transparent;
             border: none;
-            padding: 8px 18px;
-            border-radius: 40px;
-            font-weight: bold;
+            font-size: 1.5rem;
             cursor: pointer;
-            font-size: 14px;
+            padding: 6px;
+            border-radius: 40px;
             transition: 0.2s;
-            text-decoration: none;
-            display: inline-block;
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
-        .btn-laporan {
-            background: #10b981;
+        .icon-btn:hover {
+            background: #e2e8f0;
         }
-        .btn-laporan:hover {
-            background: #059669;
-        }
-        .btn-admin:hover {
-            background: #0f172a;
-        }
-        .right-buttons {
+        .right-icons {
             display: flex;
-            gap: 10px;
+            gap: 6px;
         }
 
-        /* Card */
+        /* Card ringkas */
         .card {
             background: white;
-            border-radius: 28px;
-            padding: 20px;
-            margin-bottom: 25px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            border-radius: 24px;
+            padding: 14px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
             border: 1px solid #e2e8f0;
         }
-
         .card-title {
-            font-size: 1.3rem;
+            font-size: 0.85rem;
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             color: #0f172a;
-            border-left: 5px solid #3b82f6;
-            padding-left: 12px;
+            border-left: 3px solid #3b82f6;
+            padding-left: 8px;
         }
 
-        /* Dropdown */
+        /* Select ringkas */
         select {
             width: 100%;
-            padding: 14px 16px;
-            font-size: 16px;
+            padding: 12px 12px;
+            font-size: 0.9rem;
             border-radius: 60px;
             border: 1px solid #cbd5e1;
             background: white;
             cursor: pointer;
-            outline: none;
-            transition: 0.2s;
         }
 
-        select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
-        }
-
-        /* Kamera */
+        /* Kamera area - proporsional */
         .camera-wrapper {
-            position: relative;
             background: #000;
-            border-radius: 24px;
+            border-radius: 20px;
             overflow: hidden;
-            margin: 15px 0;
+            margin: 6px 0;
+            position: relative;
         }
-
         video {
             width: 100%;
             height: auto;
             display: block;
             background: #0f172a;
         }
-
         canvas {
             display: none;
         }
 
-        .btn-camera {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 50px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 12px;
-            margin-right: 10px;
-            transition: 0.2s;
-        }
-
-        .btn-switch {
-            background: #475569;
-        }
-
-        .btn-capture {
-            background: #10b981;
-            font-size: 18px;
-            padding: 14px 24px;
-        }
-
+        /* Tombol ikon besar */
         .btn-group {
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
             margin-top: 10px;
+            justify-content: center;
+        }
+        .btn-icon {
+            background: #3b82f6;
+            border: none;
+            font-size: 1.8rem;
+            padding: 12px;
+            border-radius: 60px;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-switch-icon {
+            background: #475569;
+        }
+        .btn-capture-icon {
+            background: #10b981;
+            font-size: 1.8rem;
+        }
+        .btn-icon span {
+            font-size: 0.9rem;
+        }
+        .btn-icon:active {
+            transform: scale(0.97);
         }
 
         /* Status */
         .status {
-            margin-top: 15px;
-            padding: 12px;
+            margin-top: 12px;
+            padding: 8px;
             border-radius: 60px;
             background: #f8fafc;
             text-align: center;
-            font-size: 14px;
+            font-size: 0.75rem;
             color: #334155;
         }
-
         .success {
             background: #dcfce7;
             color: #166534;
         }
-
         .error {
             background: #fee2e2;
             color: #991b1b;
         }
 
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
+        /* Share button */
+        .share-area {
+            margin-top: 10px;
+            text-align: center;
         }
-
-        @media (max-width: 600px) {
-            body { padding: 12px; }
-            .btn-capture { width: 100%; }
-            .header { flex-direction: column; align-items: stretch; }
-            .right-buttons { justify-content: flex-end; }
+        .btn-share {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
 <div class="container">
+    <!-- Header dengan ikon -->
     <div class="header">
-        <div class="datetime" id="liveDateTime">Memuat waktu...</div>
-        <div class="right-buttons">
-            <a href="laporan.html" class="btn-laporan">📊 Laporan Presensi</a>
-            <button class="btn-admin" id="adminBtn">🔐 ADMIN</button>
+        <div class="datetime" id="liveDateTime">--:--</div>
+        <div class="right-icons">
+            <button class="icon-btn" id="laporanIconBtn" title="Laporan">📊</button>
+            <button class="icon-btn" id="adminIconBtn" title="Admin">🔐</button>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">📋 Pilih Guru</div>
+        <div class="card-title">📋 Guru</div>
         <select id="guruSelect">
-            <option value="">-- Memuat daftar guru --</option>
+            <option value="">-- Memuat --</option>
         </select>
     </div>
 
     <div class="card">
-        <div class="card-title">📸 Presensi Wajah + Lokasi</div>
+        <div class="card-title">📸 Presensi</div>
         <div class="camera-wrapper">
-            <video id="video" autoplay playsinline></video>
+            <video id="video" autoplay playsinline muted></video>
         </div>
         <canvas id="canvas" width="640" height="480"></canvas>
         <div class="btn-group">
-            <button class="btn-camera btn-switch" id="switchCameraBtn">🔄 Ganti Kamera</button>
-            <button class="btn-camera btn-capture" id="captureBtn">📍 Ambil Foto & Absen (dengan lokasi)</button>
+            <button class="btn-icon btn-switch-icon" id="switchCameraBtn">🔄 <span>Ganti</span></button>
+            <button class="btn-icon btn-capture-icon" id="captureBtn">📷 <span>Absen</span></button>
         </div>
-        <div id="statusMsg" class="status">Siap melakukan presensi</div>
+        <div id="statusMsg" class="status">Siap presensi</div>
+        <div id="shareContainer" class="share-area hidden">
+            <button id="shareBtn" class="btn-share">📤 Bagikan ke WhatsApp</button>
+        </div>
     </div>
 </div>
 
@@ -234,16 +242,13 @@
         messagingSenderId: "583253273794",
         appId: "1:583253273794:web:d7d16a57b117baa0de1f5b"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Cloudinary config (ganti UPLOAD_PRESET dengan preset unsigned yang sudah dibuat)
     const CLOUD_NAME = "dw63zuldz";
-    const UPLOAD_PRESET = "presensi_guru";   // 👈 WAJIB buat upload preset di Cloudinary
+    const UPLOAD_PRESET = "presensi_guru";
     const FOLDER_CLOUD = "presensi_guru";
 
-    // DOM elements
     const guruSelect = document.getElementById('guruSelect');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -251,65 +256,49 @@
     const switchBtn = document.getElementById('switchCameraBtn');
     const statusDiv = document.getElementById('statusMsg');
     const liveDateTime = document.getElementById('liveDateTime');
+    const shareContainer = document.getElementById('shareContainer');
+    const shareBtn = document.getElementById('shareBtn');
 
-    // Kamera
     let currentStream = null;
-    let usingFront = true;  // true = depan (user), false = belakang (environment)
-    
-    // Data guru
-    let guruList = [];
+    let usingFront = true;
+    let lastFotoUrl = "";      // menyimpan URL foto terakhir untuk share
+    let lastGuruNama = "";
 
-    // ----------------------------- UPDATE JAM REAL TIME -----------------------------
+    // Jam real-time
     function updateDateTime() {
         const now = new Date();
-        const hari = now.toLocaleDateString('id-ID', { weekday: 'long', year:'numeric', month:'long', day:'numeric' });
-        const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-        liveDateTime.innerHTML = `📅 ${hari} | 🕒 ${jam}`;
+        const hari = now.toLocaleDateString('id-ID', { weekday:'short', day:'numeric', month:'short' });
+        const jam = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+        liveDateTime.innerHTML = `${hari} ${jam}`;
     }
     setInterval(updateDateTime, 1000);
     updateDateTime();
 
-    // ----------------------------- LOAD GURU -----------------------------
+    // Load guru
     async function loadGuru() {
         try {
             const snapshot = await db.collection('guru').orderBy('nama').get();
-            guruList = [];
             guruSelect.innerHTML = '<option value="">-- Pilih Guru --</option>';
             snapshot.forEach(doc => {
-                const guru = { id: doc.id, nama: doc.data().nama };
-                guruList.push(guru);
                 const option = document.createElement('option');
-                option.value = guru.id;
-                option.textContent = guru.nama;
+                option.value = doc.id;
+                option.textContent = doc.data().nama;
                 guruSelect.appendChild(option);
             });
-            if (guruList.length === 0) {
-                statusDiv.innerHTML = "⚠️ Belum ada data guru. Masuk sebagai admin untuk menambah guru.";
-                statusDiv.classList.add('error');
-            } else {
-                statusDiv.innerHTML = "✅ Pilih nama, lalu klik 'Ambil Foto & Absen' (lokasi akan otomatis diambil)";
-                statusDiv.classList.remove('error');
-            }
+            if (snapshot.empty) statusDiv.innerHTML = "⚠️ Tambah guru via admin";
+            else statusDiv.innerHTML = "✅ Pilih guru & tekan Absen";
         } catch (err) {
-            console.error(err);
-            statusDiv.innerHTML = "Gagal memuat data guru: " + err.message;
-            statusDiv.classList.add('error');
+            statusDiv.innerHTML = "Gagal load guru";
         }
     }
 
-    // ----------------------------- KAMERA -----------------------------
+    // Kamera
     async function startCamera(faceMode = 'user') {
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-        }
-        const constraints = {
-            video: { facingMode: { exact: faceMode } }
-        };
+        if (currentStream) currentStream.getTracks().forEach(track => track.stop());
         try {
-            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: faceMode } } });
         } catch (err) {
-            const fallbackConstraints = { video: { facingMode: faceMode } };
-            currentStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+            currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: faceMode } });
         }
         video.srcObject = currentStream;
         await video.play();
@@ -317,144 +306,100 @@
 
     async function switchCamera() {
         usingFront = !usingFront;
-        const mode = usingFront ? 'user' : 'environment';
-        await startCamera(mode);
+        await startCamera(usingFront ? 'user' : 'environment');
     }
 
-    // ----------------------------- KOMPRESI FOTO (max 100kb) -----------------------------
     function compressImageToBlob(canvas, maxSizeKB = 100) {
         return new Promise((resolve) => {
             let quality = 0.85;
             const tryCompress = () => {
                 canvas.toBlob(blob => {
-                    if (blob.size / 1024 <= maxSizeKB || quality <= 0.2) {
-                        resolve(blob);
-                    } else {
-                        quality -= 0.1;
-                        tryCompress();
-                    }
+                    if (blob.size / 1024 <= maxSizeKB || quality <= 0.2) resolve(blob);
+                    else { quality -= 0.1; tryCompress(); }
                 }, 'image/jpeg', quality);
             };
             tryCompress();
         });
     }
 
-    // ----------------------------- DAPATKAN LOKASI (Promise) -----------------------------
     function getCurrentLocation() {
         return new Promise((resolve, reject) => {
-            if (!navigator.geolocation) {
-                reject(new Error("Geolocation tidak didukung browser ini"));
-                return;
-            }
+            if (!navigator.geolocation) reject("Tidak support GPS");
             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    resolve({ lat, lng, accuracy: position.coords.accuracy });
-                },
-                (err) => {
-                    reject(new Error("Gagal mendapatkan lokasi: " + err.message));
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+                err => reject(err.message),
+                { enableHighAccuracy: true, timeout: 8000 }
             );
         });
     }
 
-    // ----------------------------- TAMBAHKAN TEKS TIMESTAMP + LOKASI KE CANVAS -----------------------------
     async function addMetadataToCanvas(sourceCanvas) {
         const ctx = sourceCanvas.getContext('2d');
         const now = new Date();
         const dateStr = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID');
-        
-        // Teks timestamp (baris 1)
-        ctx.font = 'bold 20px monospace';
+        ctx.font = 'bold 18px monospace';
         ctx.fillStyle = 'white';
         ctx.shadowColor = 'black';
         ctx.shadowBlur = 6;
-        ctx.fillText(`📅 ${dateStr}`, 15, 45);
-        
-        // Coba dapatkan lokasi (dengan promise, dijalankan sebelum teks digambar)
+        ctx.fillText(`📅 ${dateStr}`, 12, 35);
         let locationText = '';
         try {
             const loc = await getCurrentLocation();
-            locationText = `📍 ${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)} (${Math.round(loc.accuracy)}m)`;
-        } catch (err) {
-            console.warn(err.message);
+            locationText = `📍 ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)} (±${Math.round(loc.accuracy)}m)`;
+        } catch (e) {
             locationText = '📍 Lokasi tidak tersedia';
         }
-        ctx.fillText(locationText, 15, 80);
+        ctx.fillText(locationText, 12, 65);
         ctx.shadowBlur = 0;
         return sourceCanvas;
     }
 
-    // ----------------------------- CEK SUDAH ABSEN HARI INI -----------------------------
     async function sudahAbsenHariIni(guruId) {
         const today = new Date().toISOString().slice(0,10);
-        const q = await db.collection('presensi')
-            .where('guruId', '==', guruId)
-            .where('tanggal', '==', today)
-            .limit(1)
-            .get();
+        const q = await db.collection('presensi').where('guruId', '==', guruId).where('tanggal', '==', today).limit(1).get();
         return !q.empty;
     }
 
-    // ----------------------------- UPLOAD KE CLOUDINARY -----------------------------
     async function uploadToCloudinary(blob) {
         const formData = new FormData();
         formData.append('file', blob, 'presensi.jpg');
         formData.append('upload_preset', UPLOAD_PRESET);
         formData.append('folder', FOLDER_CLOUD);
-        
-        const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
-        const response = await fetch(url, { method: 'POST', body: formData });
-        if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`Cloudinary error: ${errText}`);
-        }
-        const data = await response.json();
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('Upload gagal');
+        const data = await res.json();
         return data.secure_url;
     }
 
-    // ----------------------------- PROSES ABSEN -----------------------------
+    // Proses absen utama
     async function prosesAbsen() {
         const guruId = guruSelect.value;
         if (!guruId) {
-            statusDiv.innerHTML = "❌ Silakan pilih guru terlebih dahulu!";
+            statusDiv.innerHTML = "❌ Pilih guru dulu";
             statusDiv.classList.add('error');
             return;
         }
         const guruNama = guruSelect.options[guruSelect.selectedIndex].text;
 
-        // Cek absen ganda
-        const sudahAbsen = await sudahAbsenHariIni(guruId);
-        if (sudahAbsen) {
-            statusDiv.innerHTML = "⛔ Gagal: Guru ini sudah melakukan presensi hari ini!";
+        if (await sudahAbsenHariIni(guruId)) {
+            statusDiv.innerHTML = "⛔ Sudah absen hari ini!";
             statusDiv.classList.add('error');
             return;
         }
 
-        statusDiv.innerHTML = "📷 Mengambil foto & mendapatkan lokasi...";
+        statusDiv.innerHTML = "📷 Ambil foto & lokasi...";
         statusDiv.classList.remove('error','success');
+        shareContainer.classList.add('hidden');
 
-        // Gambar dari video ke canvas
         const context = canvas.getContext('2d');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Tambahkan timestamp dan lokasi (proses async, akan menunggu lokasi)
-        try {
-            await addMetadataToCanvas(canvas);
-        } catch (err) {
-            // Tetap lanjut meskipun lokasi gagal, teks error sudah ditulis
-            console.warn(err);
-        }
-        
-        // Kompresi
+        await addMetadataToCanvas(canvas);
         const compressedBlob = await compressImageToBlob(canvas, 100);
-        
-        statusDiv.innerHTML = "☁️ Mengunggah foto ke Cloudinary...";
-        let fotoUrl = "";
+
+        statusDiv.innerHTML = "☁️ Upload ke Cloudinary...";
+        let fotoUrl;
         try {
             fotoUrl = await uploadToCloudinary(compressedBlob);
         } catch (err) {
@@ -463,54 +408,73 @@
             return;
         }
 
-        // Simpan ke Firestore
         const now = new Date();
         const tanggal = now.toISOString().slice(0,10);
-        const jamMasuk = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute:'2-digit', second:'2-digit' });
-        
+        const jamMasuk = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
         const dataPresensi = {
-            guruId: guruId,
-            guruNama: guruNama,
-            tanggal: tanggal,
-            jamMasuk: jamMasuk,
+            guruId, guruNama, tanggal, jamMasuk,
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            fotoUrl: fotoUrl
+            fotoUrl
         };
-        
         try {
             await db.collection('presensi').add(dataPresensi);
-            statusDiv.innerHTML = "✅ Presensi berhasil! " + guruNama + " jam " + jamMasuk + " (lokasi tercantum di foto)";
+            statusDiv.innerHTML = `✅ Presensi berhasil! ${guruNama} ${jamMasuk}`;
             statusDiv.classList.add('success');
+            // Simpan data untuk share
+            lastFotoUrl = fotoUrl;
+            lastGuruNama = guruNama;
+            shareContainer.classList.remove('hidden');
         } catch (err) {
-            statusDiv.innerHTML = "❌ Gagal menyimpan ke database: " + err.message;
+            statusDiv.innerHTML = "❌ Gagal simpan: " + err.message;
             statusDiv.classList.add('error');
         }
     }
 
-    // ----------------------------- ADMIN -----------------------------
-    document.getElementById('adminBtn').addEventListener('click', () => {
-        const pwd = prompt("Masukkan password admin:");
+    // Fungsi share ke WhatsApp (fallback)
+    async function shareToWA() {
+        if (!lastFotoUrl) return;
+        const text = `✅ Presensi ${lastGuruNama}\n📅 ${new Date().toLocaleString('id-ID')}\n📍 Lokasi & timestamp ada di foto\n📸 Link foto: ${lastFotoUrl}`;
+        const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        // Coba Web Share API untuk share gambar (jika support)
+        if (navigator.share && false) { // sengaja false karena share file agak rumit, lebih stabil share teks + link
+            // Lebih sederhana: share teks + link
+            try {
+                await navigator.share({
+                    title: 'Presensi Guru',
+                    text: text,
+                    url: lastFotoUrl
+                });
+            } catch(e) { console.warn(e); }
+        } else {
+            window.open(waUrl, '_blank');
+        }
+    }
+
+    // Tombol navigasi
+    document.getElementById('laporanIconBtn').addEventListener('click', () => {
+        window.location.href = 'laporan.html';
+    });
+    document.getElementById('adminIconBtn').addEventListener('click', () => {
+        const pwd = prompt("Password admin:");
         if (pwd === "admin123") {
             localStorage.setItem('adminLogged', 'true');
             window.location.href = "admin.html";
-        } else {
-            alert("Password salah!");
-        }
+        } else alert("Salah!");
     });
+    shareBtn.addEventListener('click', shareToWA);
 
-    // ----------------------------- INIT -----------------------------
+    // Inisialisasi
     async function init() {
         await loadGuru();
         try {
             await startCamera('user');
-        } catch (err) {
-            statusDiv.innerHTML = "❌ Akses kamera ditolak atau tidak tersedia.";
-            statusDiv.classList.add('error');
+        } catch(e) {
+            statusDiv.innerHTML = "Izin kamera ditolak";
         }
         captureBtn.addEventListener('click', prosesAbsen);
         switchBtn.addEventListener('click', switchCamera);
     }
-    
     init();
 </script>
 </body>
