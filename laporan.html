@@ -33,6 +33,8 @@
         .btn-print { background: #10b981; margin-right: 8px; }
         .back-link { display: inline-block; margin-top: 15px; background: #475569; padding: 6px 18px; border-radius: 30px; color: white; text-decoration: none; font-size: 12px; }
         h2 { margin-bottom: 16px; border-left: 5px solid #3b82f6; padding-left: 12px; }
+        .error-msg { color: #dc2626; background: #fee2e2; padding: 12px; border-radius: 16px; margin-top: 12px; }
+        .debug-btn { background: #6b7280; margin-left: 8px; }
         @media (max-width: 700px) { td, th { font-size: 10px; } .foto-thumb { width: 35px; height: 35px; } }
     </style>
 </head>
@@ -51,6 +53,7 @@
             </div>
             <button id="filterBtn">🔍 Tampilkan</button>
             <button id="printBtn" class="btn-print">🖨 Cetak (A4 Landscape)</button>
+            <button id="debugBtn" class="debug-btn">🐞 Debug Semua Data</button>
             <a href="index.html" class="back-link">← Kembali</a>
         </div>
     </div>
@@ -73,11 +76,11 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Generate pilihan bulan & tahun
     const bulanSelect = document.getElementById('bulanSelect');
     const tahunSelect = document.getElementById('tahunSelect');
     const filterBtn = document.getElementById('filterBtn');
     const printBtn = document.getElementById('printBtn');
+    const debugBtn = document.getElementById('debugBtn');
     const laporanDiv = document.getElementById('laporanTable');
 
     const bulanNama = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -104,45 +107,109 @@
         const lastDay = new Date(tahun, bulan, 0).getDate();
         const endDate = `${tahun}-${bulan}-${lastDay}`;
         
-        const snapshot = await db.collection('presensi')
-            .where('tanggal', '>=', startDate)
-            .where('tanggal', '<=', endDate)
-            .orderBy('tanggal', 'desc')
-            .orderBy('jamMasuk', 'desc')
-            .get();
+        laporanDiv.innerHTML = '<p style="text-align:center;">⏳ Memuat data...</p>';
         
-        if (snapshot.empty) {
-            laporanDiv.innerHTML = `<p style="text-align:center;">✨ Tidak ada data presensi untuk bulan ${bulanNama[bulan-1]} ${tahun}</p>`;
-            return;
+        try {
+            // Hanya gunakan where tanpa orderBy dulu untuk menghindari indeks
+            let query = db.collection('presensi')
+                .where('tanggal', '>=', startDate)
+                .where('tanggal', '<=', endDate);
+            
+            const snapshot = await query.get();
+            
+            if (snapshot.empty) {
+                laporanDiv.innerHTML = `<p style="text-align:center;">✨ Tidak ada data presensi untuk bulan ${bulanNama[bulan-1]} ${tahun}</p>`;
+                return;
+            }
+            
+            // Konversi ke array lalu urutkan manual berdasarkan tanggal & jam
+            let items = [];
+            snapshot.forEach(doc => {
+                items.push({ id: doc.id, ...doc.data() });
+            });
+            items.sort((a,b) => {
+                if (a.tanggal !== b.tanggal) return b.tanggal.localeCompare(a.tanggal);
+                return (b.jamMasuk || '').localeCompare(a.jamMasuk || '');
+            });
+            
+            let html = `<table style="width:100%;">
+                <thead>
+                    <tr><th>No</th><th>Guru</th><th>Tanggal</th><th>Jam Masuk</th><th>Foto Presensi</th></tr>
+                </thead>
+                <tbody>`;
+            let no = 1;
+            for (const data of items) {
+                const fotoHtml = data.fotoUrl ? `<img src="${data.fotoUrl}" class="foto-thumb" onclick="window.open('${data.fotoUrl}')" onerror="this.src='https://placehold.co/60x60?text=404'">` : '-';
+                html += `<tr>
+                    <td>${no++}</td>
+                    <td>${escapeHtml(data.guruNama || 'Tidak diketahui')}</td>
+                    <td>${data.tanggal}</td>
+                    <td>${data.jamMasuk || '-'}</td>
+                    <td>${fotoHtml}</td>
+                </tr>`;
+            }
+            html += `</tbody></table>`;
+            laporanDiv.innerHTML = html;
+        } catch (err) {
+            console.error(err);
+            let errorMsg = err.message;
+            if (errorMsg.includes('index')) {
+                errorMsg += ' <br> 🔧 Klik <a href="#" id="createIndexLink">di sini</a> untuk membuat indeks otomatis (buka console Firebase).';
+            }
+            laporanDiv.innerHTML = `<div class="error-msg">❌ Gagal memuat data: ${errorMsg}</div>`;
+            // Jika error indeks, buat link
+            if (err.message.includes('index')) {
+                document.getElementById('createIndexLink')?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const url = `https://console.firebase.google.com/project/ceklokguru/firestore/indexes`;
+                    window.open(url, '_blank');
+                });
+            }
         }
-        
-        let html = `<table style="width:100%;">
-            <thead>
-                <tr><th>No</th><th>Guru</th><th>Tanggal</th><th>Jam Masuk</th><th>Foto Presensi</th></tr>
-            </thead>
-            <tbody>`;
-        let no = 1;
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const fotoHtml = data.fotoUrl ? `<img src="${data.fotoUrl}" class="foto-thumb" onclick="window.open('${data.fotoUrl}')" onerror="this.src='https://placehold.co/60x60?text=404'">` : '-';
-            html += `<tr>
-                <td>${no++}</td>
-                <td>${escapeHtml(data.guruNama || 'Tidak diketahui')}</td>
-                <td>${data.tanggal}</td>
-                <td>${data.jamMasuk}</td>
-                <td>${fotoHtml}</td>
-            </tr>`;
-        });
-        html += `</tbody></table>`;
-        laporanDiv.innerHTML = html;
     }
     
-    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    // Debug: ambil semua data tanpa filter
+    async function debugAllData() {
+        laporanDiv.innerHTML = '<p style="text-align:center;">🔍 Mengambil semua data presensi...</p>';
+        try {
+            const snapshot = await db.collection('presensi').get();
+            if (snapshot.empty) {
+                laporanDiv.innerHTML = '<p style="text-align:center;">📭 Belum ada satupun data presensi di database.</p>';
+                return;
+            }
+            let items = [];
+            snapshot.forEach(doc => {
+                items.push(doc.data());
+            });
+            const contoh = items.slice(0, 3);
+            laporanDiv.innerHTML = `
+                <div style="background:#f0fdf4; padding:12px; border-radius:16px;">
+                    <strong>✅ Total data presensi: ${items.length}</strong><br>
+                    <strong>Contoh data terbaru:</strong><br>
+                    <pre style="font-size:10px; background:#1e293b; color:#e2e8f0; padding:8px; border-radius:12px; overflow-x:auto;">${JSON.stringify(contoh, null, 2)}</pre>
+                    <p>Periksa apakah field <strong>tanggal</strong> berformat <strong>YYYY-MM-DD</strong> (contoh: 2026-05-17). Jika tidak, laporan filter bulan tidak akan cocok.</p>
+                </div>
+            `;
+        } catch (err) {
+            laporanDiv.innerHTML = `<div class="error-msg">❌ Debug error: ${err.message}</div>`;
+        }
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
     
     filterBtn.addEventListener('click', loadLaporan);
     printBtn.addEventListener('click', () => { window.print(); });
+    debugBtn.addEventListener('click', debugAllData);
     
-    // Saat awal load tampilkan data bulan ini
+    // Muat laporan awal
     loadLaporan();
 </script>
 </body>
