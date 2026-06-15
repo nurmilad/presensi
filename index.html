@@ -29,7 +29,6 @@
             margin: 0 auto;
         }
 
-        /* Header minimal */
         .header {
             display: flex;
             justify-content: space-between;
@@ -74,7 +73,6 @@
             gap: 6px;
         }
 
-        /* Card */
         .card {
             background: white;
             border-radius: 24px;
@@ -104,14 +102,13 @@
             outline: none;
         }
 
-        /* Wrapper kamera dengan rasio 1:1 */
         .camera-wrapper {
             position: relative;
             background: #000;
             border-radius: 24px;
             overflow: hidden;
             margin: 6px 0;
-            aspect-ratio: 1 / 1; /* memaksa kotak persegi */
+            aspect-ratio: 1 / 1;
         }
 
         video {
@@ -120,7 +117,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover; /* memastikan video memenuhi kotak tanpa distorsi (crop) */
+            object-fit: cover;
             display: block;
         }
 
@@ -128,7 +125,7 @@
             display: none;
         }
 
-        /* Tombol modern */
+        /* Tombol kamera outline putih transparan */
         .camera-overlay {
             position: absolute;
             bottom: 20px;
@@ -143,22 +140,23 @@
             pointer-events: auto;
             width: 70px;
             height: 70px;
-            background: white;
-            border: none;
+            background: transparent;
+            border: 3px solid white;
             border-radius: 50%;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(255, 255, 255, 0.3);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             cursor: pointer;
-            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            transition: transform 0.1s ease, background 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 2.5rem;
-            color: #1e293b;
+            color: white;
+            backdrop-filter: blur(2px);
         }
 
         .btn-capture-overlay:active {
             transform: scale(0.92);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .btn-switch-overlay {
@@ -187,7 +185,6 @@
             transform: scale(0.96);
         }
 
-        /* Sembunyikan tombol lama */
         .btn-group {
             display: none;
         }
@@ -210,6 +207,36 @@
         .error {
             background: #fee2e2;
             color: #991b1b;
+        }
+
+        /* Tombol share */
+        .share-area {
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .btn-share {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-share:active {
+            transform: scale(0.96);
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
@@ -239,8 +266,11 @@
                 <button class="btn-capture-overlay" id="captureOverlay" aria-label="Ambil foto">📷</button>
             </div>
         </div>
-        <canvas id="canvas" width="640" height="640"></canvas> <!-- canvas persegi -->
+        <canvas id="canvas" width="640" height="640"></canvas>
         <div id="statusMsg" class="status">Siap presensi</div>
+        <div id="shareContainer" class="share-area hidden">
+            <button id="shareBtn" class="btn-share">📤 Bagikan ke WhatsApp</button>
+        </div>
     </div>
 </div>
 
@@ -268,9 +298,14 @@
     const switchBtn = document.getElementById('switchCameraOverlay');
     const statusDiv = document.getElementById('statusMsg');
     const liveDateTime = document.getElementById('liveDateTime');
+    const shareContainer = document.getElementById('shareContainer');
+    const shareBtn = document.getElementById('shareBtn');
 
     let currentStream = null;
-    let usingFront = true; // true = depan, false = belakang
+    let usingFront = true;
+    let lastFotoUrl = "";
+    let lastGuruNama = "";
+    let lastJam = "";
 
     // ======================= JAM REAL-TIME =======================
     function updateDateTime() {
@@ -325,11 +360,10 @@
     }
 
     // ======================= KROP & KOMPRESI =======================
-    // Fungsi untuk mengambil gambar persegi (1:1) dari video, crop center
     function cropAndDrawSquare(ctx, videoElement, targetCanvas) {
         const vw = videoElement.videoWidth;
         const vh = videoElement.videoHeight;
-        const size = Math.min(vw, vh); // sisi persegi
+        const size = Math.min(vw, vh);
         const sx = (vw - size) / 2;
         const sy = (vh - size) / 2;
         targetCanvas.width = size;
@@ -367,7 +401,6 @@
         });
     }
 
-    // Tambah teks timestamp dan lokasi pada canvas (setelah crop)
     async function addMetadataToCanvas(canvasCtx, canvasElement) {
         const now = new Date();
         const dateStr = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID');
@@ -426,7 +459,6 @@
         }
         const guruNama = guruSelect.options[guruSelect.selectedIndex].text;
 
-        // Cek absen ganda
         if (await sudahAbsenHariIni(guruId)) {
             statusDiv.innerHTML = "⛔ Sudah absen hari ini!";
             statusDiv.classList.add('error');
@@ -435,16 +467,11 @@
 
         statusDiv.innerHTML = "📷 Mengambil foto 1:1 & lokasi...";
         statusDiv.classList.remove('error', 'success');
+        shareContainer.classList.add('hidden'); // sembunyikan share dulu
 
-        // Siapkan canvas persegi (1:1) dari video
         const ctx = canvas.getContext('2d');
-        // Crop tengah menjadi persegi
         cropAndDrawSquare(ctx, video, canvas);
-        
-        // Tambahkan teks timestamp & lokasi pada gambar persegi
         await addMetadataToCanvas(ctx, canvas);
-        
-        // Kompresi ke blob (max 100KB)
         const compressedBlob = await compressImageToBlob(canvas, 100);
 
         statusDiv.innerHTML = "☁️ Upload ke Cloudinary...";
@@ -462,10 +489,7 @@
         const jamMasuk = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
         const dataPresensi = {
-            guruId,
-            guruNama,
-            tanggal,
-            jamMasuk,
+            guruId, guruNama, tanggal, jamMasuk,
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
             fotoUrl
         };
@@ -474,10 +498,26 @@
             await db.collection('presensi').add(dataPresensi);
             statusDiv.innerHTML = `✅ Presensi berhasil! ${guruNama} ${jamMasuk}`;
             statusDiv.classList.add('success');
+            // Simpan data untuk share
+            lastFotoUrl = fotoUrl;
+            lastGuruNama = guruNama;
+            lastJam = jamMasuk;
+            shareContainer.classList.remove('hidden'); // tampilkan tombol share
         } catch (err) {
             statusDiv.innerHTML = "❌ Gagal simpan: " + err.message;
             statusDiv.classList.add('error');
         }
+    }
+
+    // ======================= SHARE KE WHATSAPP =======================
+    function shareToWA() {
+        if (!lastFotoUrl) {
+            alert("Tidak ada foto untuk dibagikan");
+            return;
+        }
+        const text = `✅ *Presensi Guru*%0A📛 ${lastGuruNama}%0A🕒 ${lastJam}%0A📅 ${new Date().toLocaleDateString('id-ID')}%0A📍 Lokasi & timestamp ada di foto%0A📸 Link foto: ${lastFotoUrl}`;
+        const waUrl = `https://wa.me/?text=${text}`;
+        window.open(waUrl, '_blank');
     }
 
     // ======================= NAVIGASI =======================
@@ -493,6 +533,7 @@
     };
     captureBtn.onclick = prosesAbsen;
     switchBtn.onclick = switchCameraHandler;
+    shareBtn.onclick = shareToWA;
 
     // ======================= INIT =======================
     async function init() {
