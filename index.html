@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Presensi Guru</title>
+    <title>CEKLOK NBS STAFF</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
@@ -40,8 +40,24 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: 0.5px;
+        }
+        .app-title span {
+            color: #3b82f6;
+        }
+
         .datetime {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             font-weight: 500;
             color: #1e293b;
             background: #f1f5f9;
@@ -236,13 +252,32 @@
         .hidden {
             display: none;
         }
+
+        /* Responsive kecil */
+        @media (max-width: 480px) {
+            .app-title {
+                font-size: 0.7rem;
+            }
+            .datetime {
+                font-size: 0.6rem;
+                padding: 2px 8px;
+            }
+            .icon-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 1.2rem;
+            }
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <div class="datetime" id="liveDateTime">--:--</div>
+        <div class="header-left">
+            <span class="app-title">🔘 <span>CEKLOK</span> NBS STAFF</span>
+        </div>
         <div class="right-icons">
+            <div class="datetime" id="liveDateTime">--:--</div>
             <button class="icon-btn" id="laporanIconBtn" title="Laporan">📊</button>
             <button class="icon-btn" id="adminIconBtn" title="Admin">🔐</button>
         </div>
@@ -304,7 +339,7 @@
     let lastFotoUrl = "";
     let lastGuruNama = "";
     let lastJam = "";
-    let lastImageBlob = null; // <-- simpan blob gambar
+    let lastImageBlob = null;
 
     // ======================= JAM REAL-TIME =======================
     function updateDateTime() {
@@ -538,7 +573,6 @@
             return;
         }
 
-        // Coba Web Share API untuk membagikan file gambar
         if (navigator.share) {
             try {
                 const file = new File([lastImageBlob], "presensi_guru.jpg", { type: "image/jpeg" });
@@ -547,13 +581,12 @@
                     text: `Presensi ${lastGuruNama} - ${lastJam}`,
                     files: [file]
                 });
-                return; // Berhasil
+                return;
             } catch (e) {
-                // User membatalkan atau share gagal
                 if (e.name !== 'AbortError') {
                     console.warn("Share gagal, fallback ke link", e);
                 } else {
-                    return; // user batal, tidak perlu fallback
+                    return;
                 }
             }
         }
