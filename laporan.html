@@ -3,45 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Presensi Guru</title>
+    <title>Laporan Presensi Guru - Rekap Bulanan</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui; }
-        body { background: #f1f5f9; padding: 20px; font-size: 11px; }
-        @media print {
-            body { background: white; padding: 0; margin: 0; }
-            .no-print { display: none; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #aaa; padding: 6px; }
-            .container { max-width: 100%; margin: 0; }
-            button, .filter-bar { display: none; }
-            .card { box-shadow: none; padding: 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
         }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .card { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .filter-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 20px; }
-        .filter-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-weight: bold; color: #334155; }
-        select, input, button { padding: 8px 12px; border-radius: 40px; border: 1px solid #cbd5e1; font-size: 12px; }
-        button { background: #3b82f6; color: white; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #2563eb; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 11px; }
-        th, td { border: 1px solid #d1d5db; padding: 8px 6px; text-align: left; vertical-align: middle; }
-        th { background: #eef2ff; }
-        .foto-thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 8px; background: #f3f4f6; cursor: pointer; }
-        .btn-print { background: #10b981; margin-right: 8px; }
-        .back-link { display: inline-block; margin-top: 15px; background: #475569; padding: 6px 18px; border-radius: 30px; color: white; text-decoration: none; font-size: 12px; }
-        h2 { margin-bottom: 16px; border-left: 5px solid #3b82f6; padding-left: 12px; }
-        .error-msg { color: #dc2626; background: #fee2e2; padding: 12px; border-radius: 16px; margin-top: 12px; }
-        .debug-btn { background: #6b7280; margin-left: 8px; }
-        @media (max-width: 700px) { td, th { font-size: 10px; } .foto-thumb { width: 35px; height: 35px; } }
+        body {
+            background: #f1f5f9;
+            padding: 10px;
+            font-size: 10px;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 16px;
+        }
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: flex-end;
+            margin-bottom: 12px;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        label {
+            font-weight: 600;
+            color: #334155;
+            font-size: 10px;
+        }
+        select, button {
+            padding: 6px 12px;
+            border-radius: 30px;
+            border: 1px solid #cbd5e1;
+            font-size: 10px;
+            background: white;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .btn-print {
+            background: #10b981;
+        }
+        .btn-print:hover {
+            background: #059669;
+        }
+        .back-link {
+            display: inline-block;
+            background: #475569;
+            padding: 6px 16px;
+            border-radius: 30px;
+            color: white;
+            text-decoration: none;
+            font-size: 10px;
+        }
+        .back-link:hover {
+            background: #334155;
+        }
+
+        /* Tabel rekap */
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+            min-width: 800px;
+        }
+        th, td {
+            border: 1px solid #d1d5db;
+            padding: 4px 2px;
+            text-align: center;
+            white-space: nowrap;
+            width: auto;
+        }
+        /* Kolom nama lebih lebar */
+        th:first-child, td:first-child {
+            text-align: left;
+            padding-left: 6px;
+            min-width: 80px;
+            max-width: 120px;
+            background: #f8fafc;
+            font-weight: 500;
+        }
+        /* Kolom tanggal seragam */
+        th:not(:first-child):not(:last-child),
+        td:not(:first-child):not(:last-child) {
+            min-width: 28px;
+            max-width: 40px;
+            padding: 2px 1px;
+        }
+        th:last-child, td:last-child {
+            min-width: 30px;
+            background: #f0fdf4;
+            font-weight: bold;
+        }
+        td.jam-cell {
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        td.jam-cell:hover {
+            background: #dbeafe;
+        }
+        td.jam-cell.empty {
+            color: #ccc;
+        }
+        tr.total-row td {
+            background: #f1f5f9;
+            font-weight: bold;
+        }
+
+        /* Popup foto */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            max-width: 90%;
+            max-height: 90%;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            position: relative;
+        }
+        .modal-content img {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 12px;
+        }
+        .modal-close {
+            position: absolute;
+            top: 8px;
+            right: 16px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #475569;
+        }
+        .modal-close:hover {
+            color: #1e293b;
+        }
+        .modal-info {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #334155;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .table-wrap {
+                overflow: visible;
+            }
+            table {
+                font-size: 7px;
+                min-width: auto;
+                width: 100%;
+            }
+            th, td {
+                padding: 2px 1px;
+            }
+            th:first-child, td:first-child {
+                min-width: 60px;
+            }
+            th:not(:first-child):not(:last-child),
+            td:not(:first-child):not(:last-child) {
+                min-width: 18px;
+            }
+            .modal-overlay {
+                display: none !important;
+            }
+            .card {
+                box-shadow: none;
+                padding: 0;
+                border-radius: 0;
+            }
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="card no-print">
-        <h2>📊 Laporan Presensi Per Bulan</h2>
+        <h2 style="font-size:14px; margin-bottom:10px; border-left:4px solid #3b82f6; padding-left:10px;">📊 Rekap Presensi Bulanan</h2>
         <div class="filter-bar">
             <div class="filter-group">
                 <label>Bulan</label>
@@ -52,15 +233,23 @@
                 <select id="tahunSelect"></select>
             </div>
             <button id="filterBtn">🔍 Tampilkan</button>
-            <button id="printBtn" class="btn-print">🖨 Cetak (A4 Landscape)</button>
-            <button id="debugBtn" class="debug-btn">🐞 Debug Semua Data</button>
+            <button id="printBtn" class="btn-print">🖨 Cetak</button>
             <a href="index.html" class="back-link">← Kembali</a>
         </div>
     </div>
     <div class="card" id="laporanCard">
         <div id="laporanTable">
-            <p style="text-align:center;">Pilih bulan dan tahun untuk menampilkan laporan.</p>
+            <p style="text-align:center; font-size:12px;">Pilih bulan dan tahun untuk menampilkan rekap.</p>
         </div>
+    </div>
+</div>
+
+<!-- Modal popup foto -->
+<div class="modal-overlay" id="fotoModal">
+    <div class="modal-content">
+        <span class="modal-close" id="modalClose">&times;</span>
+        <img id="modalImg" src="" alt="Foto presensi">
+        <div class="modal-info" id="modalInfo"></div>
     </div>
 </div>
 
@@ -76,13 +265,18 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // DOM
     const bulanSelect = document.getElementById('bulanSelect');
     const tahunSelect = document.getElementById('tahunSelect');
     const filterBtn = document.getElementById('filterBtn');
     const printBtn = document.getElementById('printBtn');
-    const debugBtn = document.getElementById('debugBtn');
     const laporanDiv = document.getElementById('laporanTable');
+    const modalOverlay = document.getElementById('fotoModal');
+    const modalImg = document.getElementById('modalImg');
+    const modalInfo = document.getElementById('modalInfo');
+    const modalClose = document.getElementById('modalClose');
 
+    // Generate pilihan bulan
     const bulanNama = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
     for (let i = 0; i < 12; i++) {
         let opt = document.createElement('option');
@@ -100,101 +294,148 @@
     bulanSelect.value = new Date().getMonth()+1;
     tahunSelect.value = tahunSekarang;
 
+    // Data global
+    let guruList = [];
+    let presensiMap = {};
+
+    // ======================= LOAD DATA =======================
     async function loadLaporan() {
         const bulan = bulanSelect.value;
         const tahun = tahunSelect.value;
-        const startDate = `${tahun}-${bulan}-01`;
         const lastDay = new Date(tahun, bulan, 0).getDate();
-        const endDate = `${tahun}-${bulan}-${lastDay}`;
-        
+
         laporanDiv.innerHTML = '<p style="text-align:center;">⏳ Memuat data...</p>';
-        
+
         try {
-            // Hanya gunakan where tanpa orderBy dulu untuk menghindari indeks
-            let query = db.collection('presensi')
-                .where('tanggal', '>=', startDate)
-                .where('tanggal', '<=', endDate);
-            
-            const snapshot = await query.get();
-            
-            if (snapshot.empty) {
-                laporanDiv.innerHTML = `<p style="text-align:center;">✨ Tidak ada data presensi untuk bulan ${bulanNama[bulan-1]} ${tahun}</p>`;
+            // 1. Ambil semua guru
+            const guruSnap = await db.collection('guru').orderBy('nama').get();
+            if (guruSnap.empty) {
+                laporanDiv.innerHTML = '<p style="text-align:center;">⚠️ Belum ada data guru. Tambahkan guru terlebih dahulu.</p>';
                 return;
             }
-            
-            // Konversi ke array lalu urutkan manual berdasarkan tanggal & jam
-            let items = [];
-            snapshot.forEach(doc => {
-                items.push({ id: doc.id, ...doc.data() });
+            guruList = [];
+            guruSnap.forEach(doc => {
+                guruList.push({ id: doc.id, nama: doc.data().nama });
             });
-            items.sort((a,b) => {
-                if (a.tanggal !== b.tanggal) return b.tanggal.localeCompare(a.tanggal);
-                return (b.jamMasuk || '').localeCompare(a.jamMasuk || '');
+
+            // 2. Ambil presensi untuk bulan ini
+            const startDate = `${tahun}-${bulan}-01`;
+            const endDate = `${tahun}-${bulan}-${String(lastDay).padStart(2,'0')}`;
+            const presSnap = await db.collection('presensi')
+                .where('tanggal', '>=', startDate)
+                .where('tanggal', '<=', endDate)
+                .get();
+
+            // 3. Bangun map presensi
+            presensiMap = {};
+            presSnap.forEach(doc => {
+                const data = doc.data();
+                const key = data.guruId + '_' + data.tanggal;
+                // Ambil hanya HH:mm dari jamMasuk (format: HH:MM:SS atau HH:MM)
+                let jam = data.jamMasuk || '-';
+                if (jam.length >= 5) {
+                    jam = jam.substring(0, 5); // ambil HH:mm
+                }
+                presensiMap[key] = {
+                    jam: jam,
+                    foto: data.fotoUrl || ''
+                };
             });
-            
-            let html = `<table style="width:100%;">
-                <thead>
-                    <tr><th>No</th><th>Guru</th><th>Tanggal</th><th>Jam Masuk</th><th>Foto Presensi</th></tr>
-                </thead>
-                <tbody>`;
-            let no = 1;
-            for (const data of items) {
-                const fotoHtml = data.fotoUrl ? `<img src="${data.fotoUrl}" class="foto-thumb" onclick="window.open('${data.fotoUrl}')" onerror="this.src='https://placehold.co/60x60?text=404'">` : '-';
-                html += `<tr>
-                    <td>${no++}</td>
-                    <td>${escapeHtml(data.guruNama || 'Tidak diketahui')}</td>
-                    <td>${data.tanggal}</td>
-                    <td>${data.jamMasuk || '-'}</td>
-                    <td>${fotoHtml}</td>
-                </tr>`;
-            }
-            html += `</tbody></table>`;
-            laporanDiv.innerHTML = html;
+
+            // 4. Buat tabel
+            renderTable(bulan, tahun, lastDay);
+
         } catch (err) {
             console.error(err);
-            let errorMsg = err.message;
-            if (errorMsg.includes('index')) {
-                errorMsg += ' <br> 🔧 Klik <a href="#" id="createIndexLink">di sini</a> untuk membuat indeks otomatis (buka console Firebase).';
+            laporanDiv.innerHTML = `<div style="color:#dc2626; background:#fee2e2; padding:12px; border-radius:16px;">
+                ❌ Gagal memuat data: ${err.message}
+            </div>`;
+        }
+    }
+
+    // ======================= RENDER TABEL =======================
+    function renderTable(bulan, tahun, lastDay) {
+        let html = '<div class="table-wrap"><table>';
+        // Header
+        html += '<thead><tr><th>Nama</th>';
+        for (let d = 1; d <= lastDay; d++) {
+            html += `<th>${d}</th>`;
+        }
+        html += '<th>Jml</th></tr></thead><tbody>';
+
+        let totalHadirSemua = 0;
+        guruList.forEach(guru => {
+            let totalHadir = 0;
+            html += `<tr><td>${escapeHtml(guru.nama)}</td>`;
+            for (let d = 1; d <= lastDay; d++) {
+                const tanggalStr = `${tahun}-${bulan}-${String(d).padStart(2,'0')}`;
+                const key = guru.id + '_' + tanggalStr;
+                const data = presensiMap[key];
+                if (data) {
+                    totalHadir++;
+                    const jam = data.jam;
+                    const foto = data.foto || '';
+                    html += `<td class="jam-cell" data-foto="${escapeHtml(foto)}" data-guru="${escapeHtml(guru.nama)}" data-tanggal="${tanggalStr}" data-jam="${escapeHtml(jam)}">${escapeHtml(jam)}</td>`;
+                } else {
+                    html += `<td class="jam-cell empty">-</td>`;
+                }
             }
-            laporanDiv.innerHTML = `<div class="error-msg">❌ Gagal memuat data: ${errorMsg}</div>`;
-            // Jika error indeks, buat link
-            if (err.message.includes('index')) {
-                document.getElementById('createIndexLink')?.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const url = `https://console.firebase.google.com/project/ceklokguru/firestore/indexes`;
-                    window.open(url, '_blank');
+            html += `<td>${totalHadir}</td></tr>`;
+            totalHadirSemua += totalHadir;
+        });
+
+        // Baris total
+        html += `<tr class="total-row"><td><strong>Total</strong></td>`;
+        for (let d = 1; d <= lastDay; d++) {
+            const tanggalStr = `${tahun}-${bulan}-${String(d).padStart(2,'0')}`;
+            let count = 0;
+            guruList.forEach(guru => {
+                const key = guru.id + '_' + tanggalStr;
+                if (presensiMap[key]) count++;
+            });
+            html += `<td>${count}</td>`;
+        }
+        html += `<td><strong>${totalHadirSemua}</strong></td></tr>`;
+
+        html += '</tbody></table></div>';
+        laporanDiv.innerHTML = html;
+
+        // Event click pada sel jam
+        document.querySelectorAll('.jam-cell').forEach(cell => {
+            const foto = cell.dataset.foto;
+            if (foto) {
+                cell.style.cursor = 'pointer';
+                cell.addEventListener('click', function(e) {
+                    const guru = this.dataset.guru;
+                    const tanggal = this.dataset.tanggal;
+                    const jam = this.dataset.jam;
+                    showFoto(foto, guru, tanggal, jam);
                 });
             }
-        }
+        });
     }
-    
-    // Debug: ambil semua data tanpa filter
-    async function debugAllData() {
-        laporanDiv.innerHTML = '<p style="text-align:center;">🔍 Mengambil semua data presensi...</p>';
-        try {
-            const snapshot = await db.collection('presensi').get();
-            if (snapshot.empty) {
-                laporanDiv.innerHTML = '<p style="text-align:center;">📭 Belum ada satupun data presensi di database.</p>';
-                return;
-            }
-            let items = [];
-            snapshot.forEach(doc => {
-                items.push(doc.data());
-            });
-            const contoh = items.slice(0, 3);
-            laporanDiv.innerHTML = `
-                <div style="background:#f0fdf4; padding:12px; border-radius:16px;">
-                    <strong>✅ Total data presensi: ${items.length}</strong><br>
-                    <strong>Contoh data terbaru:</strong><br>
-                    <pre style="font-size:10px; background:#1e293b; color:#e2e8f0; padding:8px; border-radius:12px; overflow-x:auto;">${JSON.stringify(contoh, null, 2)}</pre>
-                    <p>Periksa apakah field <strong>tanggal</strong> berformat <strong>YYYY-MM-DD</strong> (contoh: 2026-05-17). Jika tidak, laporan filter bulan tidak akan cocok.</p>
-                </div>
-            `;
-        } catch (err) {
-            laporanDiv.innerHTML = `<div class="error-msg">❌ Debug error: ${err.message}</div>`;
+
+    // ======================= POPUP FOTO =======================
+    function showFoto(fotoUrl, guru, tanggal, jam) {
+        if (!fotoUrl) {
+            alert('Tidak ada foto untuk presensi ini.');
+            return;
         }
+        modalImg.src = fotoUrl;
+        modalInfo.innerHTML = `<strong>${escapeHtml(guru)}</strong> &bull; ${tanggal} &bull; Jam ${escapeHtml(jam)}`;
+        modalOverlay.classList.add('active');
     }
-    
+
+    modalClose.addEventListener('click', () => {
+        modalOverlay.classList.remove('active');
+    });
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            modalOverlay.classList.remove('active');
+        }
+    });
+
+    // ======================= UTILITY =======================
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -204,12 +445,12 @@
             return m;
         });
     }
-    
+
+    // ======================= EVENT =======================
     filterBtn.addEventListener('click', loadLaporan);
-    printBtn.addEventListener('click', () => { window.print(); });
-    debugBtn.addEventListener('click', debugAllData);
-    
-    // Muat laporan awal
+    printBtn.addEventListener('click', () => window.print());
+
+    // Muat awal
     loadLaporan();
 </script>
 </body>
