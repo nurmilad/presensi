@@ -82,10 +82,16 @@
             background: #334155;
         }
 
+        /* Elemen khusus cetak – disembunyikan di layar */
+        .print-only {
+            display: none;
+        }
+
         /* Tabel rekap */
         .table-wrap {
             overflow-x: auto;
             margin-top: 8px;
+            position: relative;
         }
         table {
             width: 100%;
@@ -98,16 +104,24 @@
             padding: 4px 2px;
             text-align: center;
             white-space: nowrap;
-            width: auto;
         }
-        /* Kolom nama lebih lebar */
-        th:first-child, td:first-child {
+        /* Kolom Nama - sticky */
+        th:first-child,
+        td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 2;
             text-align: left;
             padding-left: 6px;
             min-width: 80px;
             max-width: 120px;
             background: #f8fafc;
             font-weight: 500;
+        }
+        /* Header sticky juga */
+        th:first-child {
+            z-index: 3;
+            background: #eef2ff;
         }
         /* Kolom tanggal seragam */
         th:not(:first-child):not(:last-child),
@@ -134,6 +148,10 @@
         tr.total-row td {
             background: #f1f5f9;
             font-weight: bold;
+        }
+        /* Sticky untuk total row */
+        tr.total-row td:first-child {
+            background: #f1f5f9;
         }
 
         /* Popup foto */
@@ -181,7 +199,12 @@
             color: #334155;
         }
 
+        /* ===== CETAK A4 LANDSCAPE ===== */
         @media print {
+            @page {
+                size: A4 landscape;
+                margin: 12mm 8mm;
+            }
             body {
                 background: white;
                 padding: 0;
@@ -190,8 +213,38 @@
             .no-print {
                 display: none !important;
             }
+            .print-only {
+                display: block !important;
+            }
+            /* Header cetak */
+            .print-header {
+                text-align: center;
+                margin-bottom: 12px;
+                font-size: 11px;
+                line-height: 1.4;
+            }
+            .print-header .sekolah {
+                font-weight: bold;
+                font-size: 16px;
+            }
+            .print-header .judul {
+                font-size: 14px;
+                font-weight: 600;
+                margin: 6px 0 4px;
+                text-decoration: underline;
+                text-underline-offset: 3px;
+            }
+            .print-header .subjudul {
+                font-size: 11px;
+                margin-bottom: 4px;
+            }
+            .print-header .line {
+                border-top: 2px solid #000;
+                margin: 4px 0 8px;
+            }
+
             .table-wrap {
-                overflow: visible;
+                overflow: visible !important;
             }
             table {
                 font-size: 7px;
@@ -202,11 +255,30 @@
                 padding: 2px 1px;
             }
             th:first-child, td:first-child {
-                min-width: 60px;
+                min-width: 50px;
+                max-width: 80px;
+                background: #f8fafc !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
             th:not(:first-child):not(:last-child),
             td:not(:first-child):not(:last-child) {
                 min-width: 18px;
+            }
+            th:first-child {
+                background: #eef2ff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            th:last-child, td:last-child {
+                background: #f0fdf4 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            tr.total-row td {
+                background: #f1f5f9 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
             .modal-overlay {
                 display: none !important;
@@ -215,6 +287,40 @@
                 box-shadow: none;
                 padding: 0;
                 border-radius: 0;
+                background: transparent;
+            }
+            /* Sticky tidak perlu di print */
+            th:first-child, td:first-child {
+                position: static !important;
+            }
+
+            /* Footer cetak - rata kanan */
+            .print-footer {
+                margin-top: 16px;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                font-size: 10px;
+                padding-top: 8px;
+                border-top: 1px solid #aaa;
+            }
+            .print-footer .ttd {
+                text-align: center;
+                margin-top: 6px;
+            }
+            .print-footer .ttd .garis {
+                margin-top: 20px;
+                border-top: 1px solid #000;
+                width: 120px;
+                display: inline-block;
+            }
+            .print-footer .ttd .label {
+                font-size: 9px;
+                margin-top: 2px;
+            }
+            .print-footer .tanggal-text {
+                font-size: 10px;
+                margin-bottom: 4px;
             }
         }
     </style>
@@ -237,9 +343,31 @@
             <a href="index.html" class="back-link">← Kembali</a>
         </div>
     </div>
+
     <div class="card" id="laporanCard">
+        <!-- Header cetak (muncul saat print) -->
+        <div class="print-only print-header" id="printHeader">
+            <div class="sekolah">YAYASAN KARYA CIPTA<br>NURMILAD BOARDING SCHOOL</div>
+            <div style="font-size:10px;">nurmiladboardingschool@gmail.com | www.nurmilad.sch.id</div>
+            <div class="line"></div>
+            <div class="judul">LAPORAN KEHADIRAN</div>
+            <div class="subjudul" id="printBulanTahun">Bulan : ...  Tahun : ....</div>
+            <div class="line" style="border-top:1px dashed #888; margin-top:2px;"></div>
+        </div>
+
+        <!-- Tempat tabel -->
         <div id="laporanTable">
             <p style="text-align:center; font-size:12px;">Pilih bulan dan tahun untuk menampilkan rekap.</p>
+        </div>
+
+        <!-- Footer cetak (muncul saat print) -->
+        <div class="print-only print-footer" id="printFooter">
+            <div class="tanggal-text" id="printTanggal">Tanggal : ...</div>
+            <div class="ttd">
+                <div>Hormat kami,</div>
+                <div class="garis"></div>
+                <div class="label">(_________________________)</div>
+            </div>
         </div>
     </div>
 </div>
@@ -275,6 +403,10 @@
     const modalImg = document.getElementById('modalImg');
     const modalInfo = document.getElementById('modalInfo');
     const modalClose = document.getElementById('modalClose');
+
+    // Elemen cetak
+    const printBulanTahun = document.getElementById('printBulanTahun');
+    const printTanggal = document.getElementById('printTanggal');
 
     // Generate pilihan bulan
     const bulanNama = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -331,10 +463,9 @@
             presSnap.forEach(doc => {
                 const data = doc.data();
                 const key = data.guruId + '_' + data.tanggal;
-                // Ambil hanya HH:mm dari jamMasuk (format: HH:MM:SS atau HH:MM)
                 let jam = data.jamMasuk || '-';
                 if (jam.length >= 5) {
-                    jam = jam.substring(0, 5); // ambil HH:mm
+                    jam = jam.substring(0, 5); // HH:mm
                 }
                 presensiMap[key] = {
                     jam: jam,
@@ -344,6 +475,14 @@
 
             // 4. Buat tabel
             renderTable(bulan, tahun, lastDay);
+
+            // 5. Update informasi cetak
+            const bulanNamaIndo = bulanNama[parseInt(bulan)-1];
+            printBulanTahun.textContent = `Bulan : ${bulanNamaIndo}  Tahun : ${tahun}`;
+            // Tanggal akhir bulan
+            const tglAkhir = new Date(tahun, bulan, 0);
+            const tglStr = tglAkhir.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+            printTanggal.textContent = `Tanggal : ${tglStr}`;
 
         } catch (err) {
             console.error(err);
