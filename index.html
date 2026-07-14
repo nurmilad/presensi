@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>CEKLOK NBS STAFF</title>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+    </script>
     <style>
         * {
             margin: 0;
@@ -200,10 +202,6 @@
             transform: scale(0.96);
         }
 
-        .btn-group {
-            display: none;
-        }
-
         .status {
             margin-top: 12px;
             padding: 8px;
@@ -242,7 +240,7 @@
             gap: 8px;
             cursor: pointer;
             transition: transform 0.1s;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         }
 
         .btn-share:active {
@@ -253,7 +251,6 @@
             display: none;
         }
 
-        /* Responsive kecil */
         @media (max-width: 480px) {
             .app-title {
                 font-size: 0.7rem;
@@ -271,357 +268,408 @@
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="header">
-        <div class="header-left">
-            <span class="app-title">🔘 <span>CEKLOK</span> NBS STAFF</span>
-        </div>
-        <div class="right-icons">
-            <div class="datetime" id="liveDateTime">--:--</div>
-            <button class="icon-btn" id="laporanIconBtn" title="Laporan">📊</button>
-            <button class="icon-btn" id="adminIconBtn" title="Admin">🔐</button>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-title">📋 Pilih Guru</div>
-        <select id="guruSelect">
-            <option value="">-- Memuat --</option>
-        </select>
-    </div>
-
-    <div class="card">
-        <div class="card-title">📸 Presensi</div>
-        <div class="camera-wrapper">
-            <video id="video" autoplay playsinline muted></video>
-            <button class="btn-switch-overlay" id="switchCameraOverlay" aria-label="Ganti kamera">🔄</button>
-            <div class="camera-overlay">
-                <button class="btn-capture-overlay" id="captureOverlay" aria-label="Ambil foto">📷</button>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <span class="app-title">🔘 <span>CEKLOK</span> NBS STAFF</span>
+            </div>
+            <div class="right-icons">
+                <div class="datetime" id="liveDateTime">--:--</div>
+                <button class="icon-btn" id="laporanIconBtn" title="Laporan">📊</button>
+                <button class="icon-btn" id="adminIconBtn" title="Admin">🔐</button>
             </div>
         </div>
-        <canvas id="canvas" width="640" height="640"></canvas>
-        <div id="statusMsg" class="status">Siap presensi</div>
-        <div id="shareContainer" class="share-area hidden">
-            <button id="shareBtn" class="btn-share">📤 Bagikan Foto ke WhatsApp</button>
+
+        <div class="card">
+            <div class="card-title">📋 Pilih Guru</div>
+            <select id="guruSelect">
+                <option value="">-- Memuat --</option>
+            </select>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📸 Presensi</div>
+            <div class="camera-wrapper">
+                <video id="video" autoplay playsinline muted></video>
+                <button class="btn-switch-overlay" id="switchCameraOverlay" aria-label="Ganti kamera">🔄</button>
+                <div class="camera-overlay">
+                    <button class="btn-capture-overlay" id="captureOverlay" aria-label="Ambil foto">📷</button>
+                </div>
+            </div>
+            <canvas id="canvas" width="640" height="640"></canvas>
+            <div id="statusMsg" class="status">Siap presensi</div>
+            <div id="shareContainer" class="share-area hidden">
+                <button id="shareBtn" class="btn-share">📤 Bagikan Foto ke WhatsApp</button>
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-    // ======================= KONFIGURASI =======================
-    const firebaseConfig = {
-        apiKey: "AIzaSyA-1YwxMQCOaA15yGn5E_wJlaxna64qhNk",
-        authDomain: "ceklokguru.firebaseapp.com",
-        projectId: "ceklokguru",
-        storageBucket: "ceklokguru.firebasestorage.app",
-        messagingSenderId: "583253273794",
-        appId: "1:583253273794:web:d7d16a57b117baa0de1f5b"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    const CLOUD_NAME = "dw63zuldz";
-    const UPLOAD_PRESET = "presensi_guru";
-
-    // DOM elements
-    const guruSelect = document.getElementById('guruSelect');
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const captureBtn = document.getElementById('captureOverlay');
-    const switchBtn = document.getElementById('switchCameraOverlay');
-    const statusDiv = document.getElementById('statusMsg');
-    const liveDateTime = document.getElementById('liveDateTime');
-    const shareContainer = document.getElementById('shareContainer');
-    const shareBtn = document.getElementById('shareBtn');
-
-    let currentStream = null;
-    let usingFront = true;
-    let lastFotoUrl = "";
-    let lastGuruNama = "";
-    let lastJam = "";
-    let lastImageBlob = null;
-
-    // ======================= JAM REAL-TIME =======================
-    function updateDateTime() {
-        const now = new Date();
-        const hari = now.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
-        const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        liveDateTime.innerHTML = `${hari} ${jam}`;
-    }
-    setInterval(updateDateTime, 1000);
-    updateDateTime();
-
-    // ======================= LOAD GURU =======================
-    async function loadGuru() {
-        try {
-            const snapshot = await db.collection('guru').orderBy('nama').get();
-            guruSelect.innerHTML = '<option value="">-- Pilih Guru --</option>';
-            snapshot.forEach(doc => {
-                const option = document.createElement('option');
-                option.value = doc.id;
-                option.textContent = doc.data().nama;
-                guruSelect.appendChild(option);
-            });
-            if (snapshot.empty) statusDiv.innerHTML = "⚠️ Tambah guru via admin";
-            else statusDiv.innerHTML = "✅ Pilih guru & tekan tombol kamera";
-        } catch (err) {
-            statusDiv.innerHTML = "Gagal load guru";
-            console.error(err);
-        }
-    }
-
-    // ======================= KAMERA =======================
-    async function startCamera(faceMode = 'user') {
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-        }
-        try {
-            currentStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { exact: faceMode } }
-            });
-        } catch (err) {
-            currentStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: faceMode }
-            });
-        }
-        video.srcObject = currentStream;
-        await video.play();
-    }
-
-    async function switchCameraHandler() {
-        usingFront = !usingFront;
-        await startCamera(usingFront ? 'user' : 'environment');
-    }
-
-    // ======================= KROP & KOMPRESI =======================
-    function cropAndDrawSquare(ctx, videoElement, targetCanvas) {
-        const vw = videoElement.videoWidth;
-        const vh = videoElement.videoHeight;
-        const size = Math.min(vw, vh);
-        const sx = (vw - size) / 2;
-        const sy = (vh - size) / 2;
-        targetCanvas.width = size;
-        targetCanvas.height = size;
-        ctx.drawImage(videoElement, sx, sy, size, size, 0, 0, size, size);
-        return size;
-    }
-
-    function compressImageToBlob(canvas, maxSizeKB = 100) {
-        return new Promise((resolve) => {
-            let quality = 0.85;
-            const tryCompress = () => {
-                canvas.toBlob(blob => {
-                    if (blob.size / 1024 <= maxSizeKB || quality <= 0.2) {
-                        resolve(blob);
-                    } else {
-                        quality -= 0.1;
-                        tryCompress();
-                    }
-                }, 'image/jpeg', quality);
-            };
-            tryCompress();
-        });
-    }
-
-    // ======================= LOKASI =======================
-    function getCurrentLocation() {
-        return new Promise((resolve, reject) => {
-            if (!navigator.geolocation) reject(new Error("Tidak support GPS"));
-            navigator.geolocation.getCurrentPosition(
-                pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
-                err => reject(new Error(err.message)),
-                { enableHighAccuracy: true, timeout: 8000 }
-            );
-        });
-    }
-
-    async function addMetadataToCanvas(canvasCtx, canvasElement) {
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID');
-        canvasCtx.font = 'bold 18px monospace';
-        canvasCtx.fillStyle = 'white';
-        canvasCtx.shadowColor = 'black';
-        canvasCtx.shadowBlur = 6;
-        canvasCtx.fillText(`📅 ${dateStr}`, 12, 35);
-        
-        let locationText = '';
-        try {
-            const loc = await getCurrentLocation();
-            locationText = `📍 ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)} (±${Math.round(loc.accuracy)}m)`;
-        } catch (e) {
-            locationText = '📍 Lokasi tidak tersedia';
-        }
-        canvasCtx.fillText(locationText, 12, 70);
-        
-        // ========== STAMPEL BULAT "PRESENSI" di pojok kanan bawah ==========
-        const size = canvasElement.width;
-        const centerX = size - 50;
-        const centerY = size - 50;
-        const radius = 40;
-        canvasCtx.shadowBlur = 0;
-        canvasCtx.beginPath();
-        canvasCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-        canvasCtx.fillStyle = 'rgba(220, 38, 38, 0.85)';
-        canvasCtx.fill();
-        canvasCtx.strokeStyle = 'white';
-        canvasCtx.lineWidth = 3;
-        canvasCtx.stroke();
-        canvasCtx.font = `bold ${Math.floor(radius * 0.4)}px system-ui`;
-        canvasCtx.fillStyle = 'white';
-        canvasCtx.shadowBlur = 0;
-        canvasCtx.textAlign = 'center';
-        canvasCtx.textBaseline = 'middle';
-        canvasCtx.fillText('PRESENSI', centerX, centerY);
-        canvasCtx.textAlign = 'left';
-        canvasCtx.textBaseline = 'alphabetic';
-    }
-
-    // ======================= CEK ABSEN HARI INI =======================
-    async function sudahAbsenHariIni(guruId) {
-        const today = new Date().toISOString().slice(0, 10);
-        const q = await db.collection('presensi')
-            .where('guruId', '==', guruId)
-            .where('tanggal', '==', today)
-            .limit(1)
-            .get();
-        return !q.empty;
-    }
-
-    // ======================= UPLOAD KE CLOUDINARY =======================
-    async function uploadToCloudinary(blob) {
-        const formData = new FormData();
-        formData.append('file', blob, 'presensi.jpg');
-        formData.append('upload_preset', UPLOAD_PRESET);
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-            method: 'POST',
-            body: formData
-        });
-        if (!res.ok) {
-            const errText = await res.text();
-            throw new Error(`Cloudinary error: ${errText}`);
-        }
-        const data = await res.json();
-        return data.secure_url;
-    }
-
-    // ======================= PROSES ABSEN =======================
-    async function prosesAbsen() {
-        const guruId = guruSelect.value;
-        if (!guruId) {
-            statusDiv.innerHTML = "❌ Pilih guru dulu";
-            statusDiv.classList.add('error');
-            return;
-        }
-        const guruNama = guruSelect.options[guruSelect.selectedIndex].text;
-
-        if (await sudahAbsenHariIni(guruId)) {
-            statusDiv.innerHTML = "⛔ Sudah absen hari ini!";
-            statusDiv.classList.add('error');
-            return;
-        }
-
-        statusDiv.innerHTML = "📷 Mengambil foto 1:1 & lokasi...";
-        statusDiv.classList.remove('error', 'success');
-        shareContainer.classList.add('hidden');
-
-        const ctx = canvas.getContext('2d');
-        cropAndDrawSquare(ctx, video, canvas);
-        await addMetadataToCanvas(ctx, canvas);
-        const compressedBlob = await compressImageToBlob(canvas, 100);
-
-        // Simpan blob untuk share
-        lastImageBlob = compressedBlob;
-
-        statusDiv.innerHTML = "☁️ Upload ke Cloudinary...";
-        let fotoUrl;
-        try {
-            fotoUrl = await uploadToCloudinary(compressedBlob);
-        } catch (err) {
-            statusDiv.innerHTML = "❌ Gagal upload foto: " + err.message;
-            statusDiv.classList.add('error');
-            return;
-        }
-
-        const now = new Date();
-        const tanggal = now.toISOString().slice(0, 10);
-        const jamMasuk = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-        const dataPresensi = {
-            guruId, guruNama, tanggal, jamMasuk,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            fotoUrl
+    <script>
+        // ======================= KONFIGURASI =======================
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-1YwxMQCOaA15yGn5E_wJlaxna64qhNk",
+            authDomain: "ceklokguru.firebaseapp.com",
+            projectId: "ceklokguru",
+            storageBucket: "ceklokguru.firebasestorage.app",
+            messagingSenderId: "583253273794",
+            appId: "1:583253273794:web:d7d16a57b117baa0de1f5b"
         };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-        try {
-            await db.collection('presensi').add(dataPresensi);
-            statusDiv.innerHTML = `✅ Presensi berhasil! ${guruNama} ${jamMasuk}`;
-            statusDiv.classList.add('success');
-            lastFotoUrl = fotoUrl;
-            lastGuruNama = guruNama;
-            lastJam = jamMasuk;
-            shareContainer.classList.remove('hidden');
-        } catch (err) {
-            statusDiv.innerHTML = "❌ Gagal simpan: " + err.message;
-            statusDiv.classList.add('error');
+        const CLOUD_NAME = "dw63zuldz";
+        const UPLOAD_PRESET = "presensi_guru";
+
+        // ===== KUSTOMISASI LOKASI DEFAULT (ubah sesuai keinginan) =====
+        // Jika GPS tidak tersedia, akan memakai teks ini
+        const DEFAULT_LOCATION = "Lempong, Kec. Bola, Kabupaten Wajo, Sulawesi Selatan 90984";
+        const COMPANY_NAME = "Nurmild Boarding School";
+
+        // DOM
+        const guruSelect = document.getElementById('guruSelect');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureOverlay');
+        const switchBtn = document.getElementById('switchCameraOverlay');
+        const statusDiv = document.getElementById('statusMsg');
+        const liveDateTime = document.getElementById('liveDateTime');
+        const shareContainer = document.getElementById('shareContainer');
+        const shareBtn = document.getElementById('shareBtn');
+
+        let currentStream = null;
+        let usingFront = true;
+        let lastFotoUrl = "";
+        let lastGuruNama = "";
+        let lastJam = "";
+        let lastImageBlob = null;
+        let lastLocationText = "";
+
+        // ======================= JAM REAL-TIME =======================
+        function updateDateTime() {
+            const now = new Date();
+            const hari = now.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+            const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            liveDateTime.innerHTML = `${hari} ${jam}`;
         }
-    }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
 
-    // ======================= SHARE KE WHATSAPP (FILE) =======================
-    async function shareToWA() {
-        if (!lastImageBlob) {
-            alert("Tidak ada foto untuk dibagikan.");
-            return;
-        }
-
-        if (navigator.share) {
+        // ======================= LOAD GURU =======================
+        async function loadGuru() {
             try {
-                const file = new File([lastImageBlob], "presensi_guru.jpg", { type: "image/jpeg" });
-                await navigator.share({
-                    title: 'Presensi Guru',
-                    text: `Presensi ${lastGuruNama} - ${lastJam}`,
-                    files: [file]
+                const snapshot = await db.collection('guru').orderBy('nama').get();
+                guruSelect.innerHTML = '<option value="">-- Pilih Guru --</option>';
+                snapshot.forEach(doc => {
+                    const option = document.createElement('option');
+                    option.value = doc.id;
+                    option.textContent = doc.data().nama;
+                    guruSelect.appendChild(option);
                 });
-                return;
-            } catch (e) {
-                if (e.name !== 'AbortError') {
-                    console.warn("Share gagal, fallback ke link", e);
-                } else {
-                    return;
-                }
+                if (snapshot.empty) statusDiv.innerHTML = "⚠️ Tambah guru via admin";
+                else statusDiv.innerHTML = "✅ Pilih guru & tekan tombol kamera";
+            } catch (err) {
+                statusDiv.innerHTML = "Gagal load guru";
+                console.error(err);
             }
         }
 
-        // Fallback: share link
-        const text = `✅ *Presensi Guru*%0A📛 ${lastGuruNama}%0A🕒 ${lastJam}%0A📅 ${new Date().toLocaleDateString('id-ID')}%0A📍 Lokasi & timestamp ada di foto%0A📸 Link foto: ${lastFotoUrl}`;
-        const waUrl = `https://wa.me/?text=${text}`;
-        window.open(waUrl, '_blank');
-    }
-
-    // ======================= NAVIGASI =======================
-    document.getElementById('laporanIconBtn').onclick = () => window.location.href = 'laporan.html';
-    document.getElementById('adminIconBtn').onclick = () => {
-        const pwd = prompt("Password admin:");
-        if (pwd === "admin123") {
-            localStorage.setItem('adminLogged', 'true');
-            window.location.href = "admin.html";
-        } else {
-            alert("Salah!");
+        // ======================= KAMERA =======================
+        async function startCamera(faceMode = 'user') {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { exact: faceMode } }
+                });
+            } catch (err) {
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: faceMode }
+                });
+            }
+            video.srcObject = currentStream;
+            await video.play();
         }
-    };
-    captureBtn.onclick = prosesAbsen;
-    switchBtn.onclick = switchCameraHandler;
-    shareBtn.onclick = shareToWA;
 
-    // ======================= INIT =======================
-    async function init() {
-        await loadGuru();
-        try {
-            await startCamera('user');
-        } catch (e) {
-            statusDiv.innerHTML = "❌ Izin kamera ditolak";
+        async function switchCameraHandler() {
+            usingFront = !usingFront;
+            await startCamera(usingFront ? 'user' : 'environment');
         }
-    }
-    init();
-</script>
+
+        // ======================= KROP & KOMPRESI =======================
+        function cropAndDrawSquare(ctx, videoElement, targetCanvas) {
+            const vw = videoElement.videoWidth;
+            const vh = videoElement.videoHeight;
+            const size = Math.min(vw, vh);
+            const sx = (vw - size) / 2;
+            const sy = (vh - size) / 2;
+            targetCanvas.width = size;
+            targetCanvas.height = size;
+            ctx.drawImage(videoElement, sx, sy, size, size, 0, 0, size, size);
+            return size;
+        }
+
+        function compressImageToBlob(canvas, maxSizeKB = 100) {
+            return new Promise((resolve) => {
+                let quality = 0.85;
+                const tryCompress = () => {
+                    canvas.toBlob(blob => {
+                        if (blob.size / 1024 <= maxSizeKB || quality <= 0.2) {
+                            resolve(blob);
+                        } else {
+                            quality -= 0.1;
+                            tryCompress();
+                        }
+                    }, 'image/jpeg', quality);
+                };
+                tryCompress();
+            });
+        }
+
+        // ======================= LOKASI =======================
+        function getCurrentLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) reject(new Error("Tidak support GPS"));
+                navigator.geolocation.getCurrentPosition(
+                    pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords
+                            .accuracy }),
+                    err => reject(new Error(err.message)),
+                    { enableHighAccuracy: true, timeout: 8000 }
+                );
+            });
+        }
+
+        // ======================= METADATA FOTO (seperti contoh) =======================
+        async function addMetadataToCanvas(canvasCtx, canvasElement, guruNama) {
+            const now = new Date();
+            const dayName = now.toLocaleDateString('id-ID', { weekday: 'long' });
+            const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+            // Ambil lokasi
+            let locationText = DEFAULT_LOCATION;
+            try {
+                const loc = await getCurrentLocation();
+                // Tampilkan koordinat agar tetap informatif
+                locationText = `📍 ${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`;
+                if (loc.accuracy) {
+                    locationText += ` (±${Math.round(loc.accuracy)}m)`;
+                }
+                // Simpan untuk fallback share
+                lastLocationText = locationText;
+            } catch (e) {
+                locationText = `📍 ${DEFAULT_LOCATION}`;
+                lastLocationText = locationText;
+            }
+
+            // ---- GAMBAR SEMI-TRANSPARAN DI ATAS ----
+            const gradTop = canvasCtx.createLinearGradient(0, 0, 0, 210);
+            gradTop.addColorStop(0, 'rgba(0,0,0,0.65)');
+            gradTop.addColorStop(1, 'rgba(0,0,0,0)');
+            canvasCtx.fillStyle = gradTop;
+            canvasCtx.fillRect(0, 0, canvasElement.width, 210);
+
+            // ---- TEXT DENGAN SHADOW ----
+            canvasCtx.shadowColor = 'rgba(0,0,0,0.9)';
+            canvasCtx.shadowBlur = 10;
+            canvasCtx.fillStyle = '#ffffff';
+            canvasCtx.textAlign = 'left';
+
+            // Baris 1: "Absen Masuk 07:21"
+            canvasCtx.font = 'bold 34px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText(`Absen Masuk ${timeStr}`, 16, 48);
+
+            // Baris 2: "Selasa, 14 Juli 2026"
+            canvasCtx.font = '21px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText(`${dayName}, ${dateStr}`, 16, 85);
+
+            // Baris 3: lokasi
+            canvasCtx.font = '18px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText(locationText, 16, 118);
+
+            // Baris 4: "Nama: Abdul Rahim"
+            canvasCtx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText(`Nama: ${guruNama}`, 16, 158);
+
+            // Baris 5: "Perusahaan: Nurmild Boarding School"
+            canvasCtx.font = '20px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText(`Perusahaan: ${COMPANY_NAME}`, 16, 192);
+
+            // ---- BAGIAN BAWAH ----
+            const bottomY = canvasElement.height - 70;
+            const gradBottom = canvasCtx.createLinearGradient(0, bottomY - 20, 0, canvasElement.height);
+            gradBottom.addColorStop(0, 'rgba(0,0,0,0)');
+            gradBottom.addColorStop(1, 'rgba(0,0,0,0.55)');
+            canvasCtx.fillStyle = gradBottom;
+            canvasCtx.fillRect(0, bottomY - 20, canvasElement.width, 90);
+
+            // Reset shadow agar teks bawah tetap terbaca
+            canvasCtx.shadowColor = 'rgba(0,0,0,0.9)';
+            canvasCtx.shadowBlur = 8;
+            canvasCtx.fillStyle = '#ffffff';
+            canvasCtx.textAlign = 'center';
+
+            canvasCtx.font = '17px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText('Timemark menjamin keaslian waktu', canvasElement.width / 2, canvasElement.height - 32);
+
+            canvasCtx.font = '15px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText('Foto 100% akurat', canvasElement.width / 2, canvasElement.height - 8);
+
+            // Reset
+            canvasCtx.shadowBlur = 0;
+            canvasCtx.textAlign = 'left';
+        }
+
+        // ======================= CEK ABSEN HARI INI =======================
+        async function sudahAbsenHariIni(guruId) {
+            const today = new Date().toISOString().slice(0, 10);
+            const q = await db.collection('presensi')
+                .where('guruId', '==', guruId)
+                .where('tanggal', '==', today)
+                .limit(1)
+                .get();
+            return !q.empty;
+        }
+
+        // ======================= UPLOAD KE CLOUDINARY =======================
+        async function uploadToCloudinary(blob) {
+            const formData = new FormData();
+            formData.append('file', blob, 'presensi.jpg');
+            formData.append('upload_preset', UPLOAD_PRESET);
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+                method: 'POST',
+                body: formData
+            });
+            if (!res.ok) {
+                const errText = await res.text();
+                throw new Error(`Cloudinary error: ${errText}`);
+            }
+            const data = await res.json();
+            return data.secure_url;
+        }
+
+        // ======================= PROSES ABSEN =======================
+        async function prosesAbsen() {
+            const guruId = guruSelect.value;
+            if (!guruId) {
+                statusDiv.innerHTML = "❌ Pilih guru dulu";
+                statusDiv.classList.add('error');
+                return;
+            }
+            const guruNama = guruSelect.options[guruSelect.selectedIndex].text;
+
+            if (await sudahAbsenHariIni(guruId)) {
+                statusDiv.innerHTML = "⛔ Sudah absen hari ini!";
+                statusDiv.classList.add('error');
+                return;
+            }
+
+            statusDiv.innerHTML = "📷 Mengambil foto 1:1 & lokasi...";
+            statusDiv.classList.remove('error', 'success');
+            shareContainer.classList.add('hidden');
+
+            const ctx = canvas.getContext('2d');
+            cropAndDrawSquare(ctx, video, canvas);
+            await addMetadataToCanvas(ctx, canvas, guruNama);
+
+            const compressedBlob = await compressImageToBlob(canvas, 100);
+            lastImageBlob = compressedBlob;
+            lastGuruNama = guruNama;
+
+            statusDiv.innerHTML = "☁️ Upload ke Cloudinary...";
+            let fotoUrl;
+            try {
+                fotoUrl = await uploadToCloudinary(compressedBlob);
+            } catch (err) {
+                statusDiv.innerHTML = "❌ Gagal upload foto: " + err.message;
+                statusDiv.classList.add('error');
+                return;
+            }
+
+            const now = new Date();
+            const tanggal = now.toISOString().slice(0, 10);
+            const jamMasuk = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            lastJam = jamMasuk;
+
+            const dataPresensi = {
+                guruId,
+                guruNama,
+                tanggal,
+                jamMasuk,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                fotoUrl,
+                location: lastLocationText || DEFAULT_LOCATION
+            };
+
+            try {
+                await db.collection('presensi').add(dataPresensi);
+                statusDiv.innerHTML = `✅ Presensi berhasil! ${guruNama} ${jamMasuk}`;
+                statusDiv.classList.add('success');
+                lastFotoUrl = fotoUrl;
+                shareContainer.classList.remove('hidden');
+            } catch (err) {
+                statusDiv.innerHTML = "❌ Gagal simpan: " + err.message;
+                statusDiv.classList.add('error');
+            }
+        }
+
+        // ======================= SHARE KE WHATSAPP =======================
+        async function shareToWA() {
+            if (!lastImageBlob) {
+                alert("Tidak ada foto untuk dibagikan.");
+                return;
+            }
+
+            if (navigator.share) {
+                try {
+                    const file = new File([lastImageBlob], "presensi_guru.jpg", { type: "image/jpeg" });
+                    await navigator.share({
+                        title: 'Presensi Guru',
+                        text: `Presensi ${lastGuruNama} - ${lastJam}`,
+                        files: [file]
+                    });
+                    return;
+                } catch (e) {
+                    if (e.name !== 'AbortError') {
+                        console.warn("Share gagal, fallback ke link", e);
+                    } else {
+                        return;
+                    }
+                }
+            }
+
+            // Fallback link
+            const text =
+                `✅ *Presensi Guru*%0A📛 ${lastGuruNama}%0A🕒 ${lastJam}%0A📅 ${new Date().toLocaleDateString('id-ID')}%0A📍 ${lastLocationText || DEFAULT_LOCATION}%0A📸 Link foto: ${lastFotoUrl}`;
+            const waUrl = `https://wa.me/?text=${text}`;
+            window.open(waUrl, '_blank');
+        }
+
+        // ======================= NAVIGASI =======================
+        document.getElementById('laporanIconBtn').onclick = () => window.location.href = 'laporan.html';
+        document.getElementById('adminIconBtn').onclick = () => {
+            const pwd = prompt("Password admin:");
+            if (pwd === "admin123") {
+                localStorage.setItem('adminLogged', 'true');
+                window.location.href = "admin.html";
+            } else {
+                alert("Salah!");
+            }
+        };
+        captureBtn.onclick = prosesAbsen;
+        switchBtn.onclick = switchCameraHandler;
+        shareBtn.onclick = shareToWA;
+
+        // ======================= INIT =======================
+        async function init() {
+            await loadGuru();
+            try {
+                await startCamera('user');
+            } catch (e) {
+                statusDiv.innerHTML = "❌ Izin kamera ditolak";
+            }
+        }
+        init();
+    </script>
 </body>
 </html>
