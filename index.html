@@ -320,10 +320,8 @@
         const CLOUD_NAME = "dw63zuldz";
         const UPLOAD_PRESET = "presensi_guru";
 
-        // ===== KUSTOMISASI LOKASI DEFAULT (ubah sesuai keinginan) =====
-        // Jika GPS tidak tersedia, akan memakai teks ini
+        // ===== KUSTOMISASI LOKASI DEFAULT =====
         const DEFAULT_LOCATION = "Lempong, Kec. Bola, Kabupaten Wajo, Sulawesi Selatan 90984";
-        const COMPANY_NAME = "Nurmild Boarding School";
 
         // DOM
         const guruSelect = document.getElementById('guruSelect');
@@ -439,7 +437,7 @@
             });
         }
 
-        // ======================= METADATA FOTO (seperti contoh) =======================
+        // ======================= METADATA FOTO (semua di bawah, rapat) =======================
         async function addMetadataToCanvas(canvasCtx, canvasElement, guruNama) {
             const now = new Date();
             const dayName = now.toLocaleDateString('id-ID', { weekday: 'long' });
@@ -450,74 +448,68 @@
             let locationText = DEFAULT_LOCATION;
             try {
                 const loc = await getCurrentLocation();
-                // Tampilkan koordinat agar tetap informatif
                 locationText = `📍 ${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`;
                 if (loc.accuracy) {
                     locationText += ` (±${Math.round(loc.accuracy)}m)`;
                 }
-                // Simpan untuk fallback share
                 lastLocationText = locationText;
             } catch (e) {
                 locationText = `📍 ${DEFAULT_LOCATION}`;
                 lastLocationText = locationText;
             }
 
-            // ---- GAMBAR SEMI-TRANSPARAN DI ATAS ----
-            const gradTop = canvasCtx.createLinearGradient(0, 0, 0, 210);
-            gradTop.addColorStop(0, 'rgba(0,0,0,0.65)');
-            gradTop.addColorStop(1, 'rgba(0,0,0,0)');
-            canvasCtx.fillStyle = gradTop;
-            canvasCtx.fillRect(0, 0, canvasElement.width, 210);
+            const w = canvasElement.width;
+            const h = canvasElement.height;
+
+            // ---- GAMBAR SEMI-TRANSPARAN DI BAWAH (3/4 dari atas) ----
+            const startY = h * 0.70; // mulai dari 70% tinggi
+            const gradBottom = canvasCtx.createLinearGradient(0, startY - 20, 0, h);
+            gradBottom.addColorStop(0, 'rgba(0,0,0,0)');
+            gradBottom.addColorStop(0.3, 'rgba(0,0,0,0.55)');
+            gradBottom.addColorStop(1, 'rgba(0,0,0,0.8)');
+            canvasCtx.fillStyle = gradBottom;
+            canvasCtx.fillRect(0, startY - 20, w, h - startY + 20);
 
             // ---- TEXT DENGAN SHADOW ----
             canvasCtx.shadowColor = 'rgba(0,0,0,0.9)';
-            canvasCtx.shadowBlur = 10;
-            canvasCtx.fillStyle = '#ffffff';
-            canvasCtx.textAlign = 'left';
-
-            // Baris 1: "Absen Masuk 07:21"
-            canvasCtx.font = 'bold 34px system-ui, -apple-system, sans-serif';
-            canvasCtx.fillText(`Absen Masuk ${timeStr}`, 16, 48);
-
-            // Baris 2: "Selasa, 14 Juli 2026"
-            canvasCtx.font = '21px system-ui, -apple-system, sans-serif';
-            canvasCtx.fillText(`${dayName}, ${dateStr}`, 16, 85);
-
-            // Baris 3: lokasi
-            canvasCtx.font = '18px system-ui, -apple-system, sans-serif';
-            canvasCtx.fillText(locationText, 16, 118);
-
-            // Baris 4: "Nama: Abdul Rahim"
-            canvasCtx.font = 'bold 24px system-ui, -apple-system, sans-serif';
-            canvasCtx.fillText(`Nama: ${guruNama}`, 16, 158);
-
-            // Baris 5: "Perusahaan: Nurmild Boarding School"
-            canvasCtx.font = '20px system-ui, -apple-system, sans-serif';
-            canvasCtx.fillText(`Perusahaan: ${COMPANY_NAME}`, 16, 192);
-
-            // ---- BAGIAN BAWAH ----
-            const bottomY = canvasElement.height - 70;
-            const gradBottom = canvasCtx.createLinearGradient(0, bottomY - 20, 0, canvasElement.height);
-            gradBottom.addColorStop(0, 'rgba(0,0,0,0)');
-            gradBottom.addColorStop(1, 'rgba(0,0,0,0.55)');
-            canvasCtx.fillStyle = gradBottom;
-            canvasCtx.fillRect(0, bottomY - 20, canvasElement.width, 90);
-
-            // Reset shadow agar teks bawah tetap terbaca
-            canvasCtx.shadowColor = 'rgba(0,0,0,0.9)';
             canvasCtx.shadowBlur = 8;
             canvasCtx.fillStyle = '#ffffff';
+            canvasCtx.textAlign = 'left';
+            canvasCtx.textBaseline = 'top';
+
+            // Baris 1: "Absen Masuk 07:21"
+            let yPos = startY + 10;
+            canvasCtx.font = 'bold 28px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText(`Absen Masuk ${timeStr}`, 16, yPos);
+
+            // Baris 2: "Selasa, 14 Juli 2026"
+            yPos += 36;
+            canvasCtx.font = '18px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText(`${dayName}, ${dateStr}`, 16, yPos);
+
+            // Baris 3: lokasi
+            yPos += 30;
+            canvasCtx.font = '16px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText(locationText, 16, yPos);
+
+            // Baris 4: "Nama: Abdul Rahim"
+            yPos += 32;
+            canvasCtx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText(`Nama: ${guruNama}`, 16, yPos);
+
+            // ---- TULISAN BAWAH (tengah) ----
+            const bottomText = 'Aplikasi Presensi Guru / Staf Nurmilad Boarding School';
             canvasCtx.textAlign = 'center';
-
-            canvasCtx.font = '17px system-ui, -apple-system, sans-serif';
-            canvasCtx.fillText('Timemark menjamin keaslian waktu', canvasElement.width / 2, canvasElement.height - 32);
-
-            canvasCtx.font = '15px system-ui, -apple-system, sans-serif';
-            canvasCtx.fillText('Foto 100% akurat', canvasElement.width / 2, canvasElement.height - 8);
+            canvasCtx.textBaseline = 'bottom';
+            canvasCtx.font = 'bold 17px system-ui, -apple-system, sans-serif';
+            canvasCtx.shadowBlur = 10;
+            canvasCtx.fillStyle = '#ffffff';
+            canvasCtx.fillText(bottomText, w / 2, h - 14);
 
             // Reset
             canvasCtx.shadowBlur = 0;
             canvasCtx.textAlign = 'left';
+            canvasCtx.textBaseline = 'alphabetic';
         }
 
         // ======================= CEK ABSEN HARI INI =======================
