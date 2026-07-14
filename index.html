@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CEKLOK PTK NBS</title>
+    <title>CEKLOK NBS STAFF</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
     </script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
@@ -19,9 +19,9 @@
         body {
             background: #f1f5f9;
             min-height: 100vh;
-            padding: 10px;
+            padding: 6px 8px;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
         }
 
@@ -31,55 +31,61 @@
             margin: 0 auto;
         }
 
+        /* ===== HEADER SUPER COMPACT ===== */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: white;
-            padding: 8px 16px;
-            border-radius: 40px;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+            padding: 4px 10px;
+            border-radius: 30px;
+            margin-bottom: 6px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+            min-height: 36px;
         }
 
         .header-left {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
         }
 
         .app-title {
-            font-size: 0.85rem;
+            font-size: 0.7rem;
             font-weight: 700;
             color: #0f172a;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
+            line-height: 1.2;
         }
         .app-title span {
             color: #3b82f6;
         }
 
         .datetime {
-            font-size: 0.65rem;
+            font-size: 0.55rem;
             font-weight: 500;
             color: #1e293b;
             background: #f1f5f9;
-            padding: 4px 10px;
-            border-radius: 30px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+            line-height: 1.4;
         }
 
         .icon-btn {
             background: transparent;
             border: none;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             cursor: pointer;
-            padding: 6px;
-            border-radius: 40px;
-            width: 44px;
-            height: 44px;
+            padding: 4px;
+            border-radius: 30px;
+            width: 30px;
+            height: 30px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             transition: background 0.2s;
+            line-height: 1;
         }
 
         .icon-btn:hover {
@@ -88,44 +94,48 @@
 
         .right-icons {
             display: flex;
-            gap: 6px;
+            gap: 2px;
+            align-items: center;
         }
 
+        /* ===== CARDS ===== */
         .card {
             background: white;
-            border-radius: 24px;
-            padding: 14px;
-            margin-bottom: 12px;
+            border-radius: 18px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
             border: 1px solid #e2e8f0;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
         }
 
         .card-title {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             border-left: 3px solid #3b82f6;
             padding-left: 8px;
             color: #0f172a;
+            line-height: 1.3;
         }
 
         select {
             width: 100%;
-            padding: 12px;
-            font-size: 0.9rem;
-            border-radius: 60px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            border-radius: 40px;
             border: 1px solid #cbd5e1;
             background: white;
             cursor: pointer;
             outline: none;
+            line-height: 1.3;
         }
 
         .camera-wrapper {
             position: relative;
             background: #000;
-            border-radius: 24px;
+            border-radius: 18px;
             overflow: hidden;
-            margin: 6px 0;
+            margin: 4px 0;
             aspect-ratio: 1 / 1;
         }
 
@@ -145,7 +155,7 @@
 
         .camera-overlay {
             position: absolute;
-            bottom: 20px;
+            bottom: 14px;
             left: 0;
             right: 0;
             display: flex;
@@ -155,8 +165,8 @@
 
         .btn-capture-overlay {
             pointer-events: auto;
-            width: 70px;
-            height: 70px;
+            width: 60px;
+            height: 60px;
             background: transparent;
             border: 3px solid white;
             border-radius: 50%;
@@ -166,7 +176,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             color: white;
             backdrop-filter: blur(2px);
         }
@@ -179,18 +189,18 @@
         .btn-switch-overlay {
             pointer-events: auto;
             position: absolute;
-            top: 16px;
-            right: 16px;
-            width: 48px;
-            height: 48px;
+            top: 12px;
+            right: 12px;
+            width: 38px;
+            height: 38px;
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.25);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.6rem;
+            font-size: 1.3rem;
             color: white;
             cursor: pointer;
             transition: background 0.2s;
@@ -203,13 +213,14 @@
         }
 
         .status {
-            margin-top: 12px;
-            padding: 8px;
-            border-radius: 60px;
+            margin-top: 8px;
+            padding: 6px 10px;
+            border-radius: 40px;
             background: #f8fafc;
             text-align: center;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #334155;
+            line-height: 1.3;
         }
 
         .success {
@@ -223,7 +234,7 @@
         }
 
         .share-area {
-            margin-top: 12px;
+            margin-top: 8px;
             text-align: center;
         }
 
@@ -231,16 +242,17 @@
             background: #25D366;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 40px;
-            font-size: 0.85rem;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.75rem;
             font-weight: bold;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             cursor: pointer;
             transition: transform 0.1s;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            line-height: 1.3;
         }
 
         .btn-share:active {
@@ -251,27 +263,137 @@
             display: none;
         }
 
+        /* ===== RESPONSIVE KECIL ===== */
         @media (max-width: 480px) {
+            body {
+                padding: 4px 6px;
+            }
+            .header {
+                padding: 3px 8px;
+                min-height: 32px;
+                border-radius: 24px;
+                margin-bottom: 4px;
+            }
             .app-title {
-                font-size: 0.7rem;
+                font-size: 0.6rem;
             }
             .datetime {
-                font-size: 0.6rem;
-                padding: 2px 8px;
+                font-size: 0.5rem;
+                padding: 1px 6px;
             }
             .icon-btn {
-                width: 36px;
-                height: 36px;
-                font-size: 1.2rem;
+                width: 26px;
+                height: 26px;
+                font-size: 1rem;
+                padding: 2px;
+            }
+            .card {
+                padding: 8px 10px;
+                margin-bottom: 6px;
+                border-radius: 14px;
+            }
+            .card-title {
+                font-size: 0.65rem;
+                margin-bottom: 4px;
+                padding-left: 6px;
+            }
+            select {
+                padding: 6px 10px;
+                font-size: 0.7rem;
+                border-radius: 30px;
+            }
+            .camera-wrapper {
+                border-radius: 14px;
+                margin: 2px 0;
+            }
+            .btn-capture-overlay {
+                width: 50px;
+                height: 50px;
+                font-size: 1.8rem;
+                border-width: 2.5px;
+            }
+            .btn-switch-overlay {
+                width: 32px;
+                height: 32px;
+                font-size: 1rem;
+                top: 8px;
+                right: 8px;
+            }
+            .status {
+                font-size: 0.6rem;
+                padding: 4px 8px;
+                margin-top: 6px;
+            }
+            .btn-share {
+                font-size: 0.65rem;
+                padding: 6px 14px;
+            }
+            .share-area {
+                margin-top: 6px;
+            }
+        }
+
+        /* ===== EXTRA TINY ===== */
+        @media (max-width: 380px) {
+            .header {
+                padding: 2px 6px;
+                min-height: 28px;
+            }
+            .app-title {
+                font-size: 0.5rem;
+            }
+            .datetime {
+                font-size: 0.45rem;
+                padding: 1px 4px;
+            }
+            .icon-btn {
+                width: 22px;
+                height: 22px;
+                font-size: 0.85rem;
+            }
+            .card {
+                padding: 6px 8px;
+                margin-bottom: 4px;
+                border-radius: 12px;
+            }
+            .card-title {
+                font-size: 0.6rem;
+                margin-bottom: 3px;
+            }
+            select {
+                padding: 5px 8px;
+                font-size: 0.65rem;
+            }
+            .btn-capture-overlay {
+                width: 44px;
+                height: 44px;
+                font-size: 1.5rem;
+            }
+            .btn-switch-overlay {
+                width: 28px;
+                height: 28px;
+                font-size: 0.85rem;
+                top: 6px;
+                right: 6px;
+            }
+            .status {
+                font-size: 0.55rem;
+                padding: 3px 6px;
+                margin-top: 4px;
+            }
+            .btn-share {
+                font-size: 0.6rem;
+                padding: 5px 12px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- HEADER SUPER COMPACT -->
         <div class="header">
             <div class="header-left">
-                <span class="app-title">🔘 <span>CEKLOK</span> PTK NBS</span>
+                <span class="app-title">🔘 <span>CEKLOK</span> NBS STAFF</span>
             </div>
             <div class="right-icons">
                 <div class="datetime" id="liveDateTime">--:--</div>
@@ -280,6 +402,7 @@
             </div>
         </div>
 
+        <!-- PILIH GURU -->
         <div class="card">
             <div class="card-title">📋 Pilih Guru</div>
             <select id="guruSelect">
@@ -287,6 +410,7 @@
             </select>
         </div>
 
+        <!-- KAMERA -->
         <div class="card">
             <div class="card-title">📸 Presensi</div>
             <div class="camera-wrapper">
@@ -438,8 +562,6 @@
         }
 
         // ======================= METADATA FOTO =======================
-        // Top: Aplikasi Presensi PTK Nurmilad Boarding School
-        // Bottom: Absen Masuk, tanggal, lokasi, nama (rapat, 3/4 ke bawah)
         async function addMetadataToCanvas(canvasCtx, canvasElement, guruNama) {
             const now = new Date();
             const dayName = now.toLocaleDateString('id-ID', { weekday: 'long' });
@@ -462,8 +584,8 @@
             const w = canvasElement.width;
             const h = canvasElement.height;
 
-            // ---- TOP HEADER (Aplikasi Presensi PTK Nurmilad Boarding School) ----
-            const topH = 70;
+            // ---- TOP HEADER ----
+            const topH = 68;
             const gradTop = canvasCtx.createLinearGradient(0, 0, 0, topH);
             gradTop.addColorStop(0, 'rgba(0,0,0,0.7)');
             gradTop.addColorStop(1, 'rgba(0,0,0,0)');
@@ -475,10 +597,10 @@
             canvasCtx.fillStyle = '#ffffff';
             canvasCtx.textAlign = 'center';
             canvasCtx.textBaseline = 'top';
-            canvasCtx.font = 'bold 20px system-ui, -apple-system, sans-serif';
-            canvasCtx.fillText('Aplikasi Presensi PTK Nurmilad Boarding School', w / 2, 16);
+            canvasCtx.font = 'bold 19px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText('Aplikasi Presensi PTK Nurmilad Boarding School', w / 2, 14);
 
-            // ---- BOTTOM INFO (mulai 70% dari atas) ----
+            // ---- BOTTOM INFO (70% dari atas) ----
             const startY = h * 0.70;
             const gradBottom = canvasCtx.createLinearGradient(0, startY - 20, 0, h);
             gradBottom.addColorStop(0, 'rgba(0,0,0,0)');
@@ -668,4 +790,3 @@
     </script>
 </body>
 </html>
-```
