@@ -51,7 +51,7 @@
         }
 
         .app-title {
-            font-size: 0.7rem;
+            font-size: 0.75rem;   /* +0.05rem */
             font-weight: 700;
             color: #0f172a;
             letter-spacing: 0.3px;
@@ -62,7 +62,7 @@
         }
 
         .datetime {
-            font-size: 0.55rem;
+            font-size: 0.6rem;    /* +0.05rem */
             font-weight: 500;
             color: #1e293b;
             background: #f1f5f9;
@@ -75,7 +75,7 @@
         .icon-btn {
             background: transparent;
             border: none;
-            font-size: 1.2rem;
+            font-size: 1.3rem;    /* +0.1rem */
             cursor: pointer;
             padding: 4px;
             border-radius: 30px;
@@ -109,7 +109,7 @@
         }
 
         .card-title {
-            font-size: 0.75rem;
+            font-size: 0.8rem;    /* +0.05rem */
             font-weight: 600;
             margin-bottom: 6px;
             border-left: 3px solid #3b82f6;
@@ -121,7 +121,7 @@
         select {
             width: 100%;
             padding: 8px 12px;
-            font-size: 0.8rem;
+            font-size: 0.85rem;   /* +0.05rem */
             border-radius: 40px;
             border: 1px solid #cbd5e1;
             background: white;
@@ -219,7 +219,7 @@
             border-radius: 40px;
             background: #f8fafc;
             text-align: center;
-            font-size: 0.7rem;
+            font-size: 0.75rem;   /* +0.05rem */
             color: #334155;
             line-height: 1.3;
         }
@@ -228,6 +228,7 @@
             display: inline-block;
             margin-left: 6px;
             font-weight: 600;
+            font-size: 0.75rem;   /* tambahan agar konsisten */
         }
         .loc-status.gps-ok {
             color: #166534;
@@ -265,7 +266,7 @@
             border: none;
             padding: 8px 16px;
             border-radius: 30px;
-            font-size: 0.75rem;
+            font-size: 0.8rem;    /* +0.05rem */
             font-weight: bold;
             display: inline-flex;
             align-items: center;
@@ -296,16 +297,16 @@
                 margin-bottom: 4px;
             }
             .app-title {
-                font-size: 0.6rem;
+                font-size: 0.65rem;
             }
             .datetime {
-                font-size: 0.5rem;
+                font-size: 0.55rem;
                 padding: 1px 6px;
             }
             .icon-btn {
                 width: 26px;
                 height: 26px;
-                font-size: 1rem;
+                font-size: 1.1rem;
                 padding: 2px;
             }
             .card {
@@ -314,13 +315,13 @@
                 border-radius: 14px;
             }
             .card-title {
-                font-size: 0.65rem;
+                font-size: 0.7rem;
                 margin-bottom: 4px;
                 padding-left: 6px;
             }
             select {
                 padding: 6px 10px;
-                font-size: 0.7rem;
+                font-size: 0.75rem;
                 border-radius: 30px;
             }
             .camera-wrapper {
@@ -341,12 +342,15 @@
                 right: 8px;
             }
             .status {
-                font-size: 0.6rem;
+                font-size: 0.65rem;
                 padding: 4px 8px;
                 margin-top: 6px;
             }
-            .btn-share {
+            .status .loc-status {
                 font-size: 0.65rem;
+            }
+            .btn-share {
+                font-size: 0.7rem;
                 padding: 6px 14px;
             }
             .share-area {
@@ -360,16 +364,16 @@
                 min-height: 28px;
             }
             .app-title {
-                font-size: 0.5rem;
+                font-size: 0.55rem;
             }
             .datetime {
-                font-size: 0.45rem;
+                font-size: 0.5rem;
                 padding: 1px 4px;
             }
             .icon-btn {
                 width: 22px;
                 height: 22px;
-                font-size: 0.85rem;
+                font-size: 0.95rem;
             }
             .card {
                 padding: 6px 8px;
@@ -400,6 +404,9 @@
                 font-size: 0.55rem;
                 padding: 3px 6px;
                 margin-top: 4px;
+            }
+            .status .loc-status {
+                font-size: 0.55rem;
             }
             .btn-share {
                 font-size: 0.6rem;
@@ -484,7 +491,7 @@
         let lastJam = "";
         let lastImageBlob = null;
         let lastLocationText = "";
-        let lastLocationRaw = null; // simpan objek lokasi lengkap
+        let lastLocationRaw = null;
 
         // ======================= JAM REAL-TIME =======================
         function updateDateTime() {
@@ -639,9 +646,7 @@
                 if (!response.ok) throw new Error('Gagal reverse geocode');
                 const data = await response.json();
                 if (data && data.display_name) {
-                    // Bersihkan display_name (hapus kode pos berlebih)
                     let address = data.display_name;
-                    // Potong bagian yang terlalu panjang
                     const parts = address.split(',');
                     if (parts.length > 4) {
                         address = parts.slice(0, 4).join(',').trim();
@@ -657,22 +662,14 @@
 
         // ======================= AMBIL LOKASI LENGKAP =======================
         async function getFullLocation() {
-            // Tampilkan status loading di statusDiv
-            const locStatus = document.createElement('span');
-            locStatus.className = 'loc-status gps-loading';
-            locStatus.textContent = '🔍 Mencari GPS...';
-            // Cari elemen status, kita akan update nanti
-
             try {
                 const pos = await getLocationWithRetry(3, 8000);
-                // Dapatkan alamat dari koordinat
                 let address = await reverseGeocode(pos.lat, pos.lng);
 
                 let locationText = '';
                 if (address) {
                     locationText = `📍 ${address}`;
                 } else {
-                    // Fallback ke koordinat
                     locationText = `📍 ${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
                     if (pos.accuracy) {
                         locationText += ` (±${Math.round(pos.accuracy)}m)`;
@@ -692,14 +689,12 @@
                 okSpan.textContent = '📍 GPS OK';
                 statusMsg.appendChild(okSpan);
 
-                // Tambahkan tooltip lokasi di status
                 return {
                     text: locationText,
                     raw: pos,
                     address: address
                 };
             } catch (err) {
-                // GPS gagal, pakai default
                 lastLocationText = `📍 ${DEFAULT_LOCATION}`;
                 lastLocationRaw = null;
 
@@ -720,7 +715,7 @@
             }
         }
 
-        // ======================= METADATA FOTO =======================
+        // ======================= METADATA FOTO (ukuran font dinaikkan ~1pt) =======================
         async function addMetadataToCanvas(canvasCtx, canvasElement, guruNama, locationInfo) {
             const now = new Date();
             const dayName = now.toLocaleDateString('id-ID', { weekday: 'long' });
@@ -728,7 +723,6 @@
             const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
             const locationText = locationInfo ? locationInfo.text : `📍 ${DEFAULT_LOCATION}`;
-            // Simpan untuk share
             lastLocationText = locationText;
 
             const w = canvasElement.width;
@@ -747,7 +741,7 @@
             canvasCtx.fillStyle = '#ffffff';
             canvasCtx.textAlign = 'center';
             canvasCtx.textBaseline = 'top';
-            canvasCtx.font = 'bold 20px system-ui, -apple-system, sans-serif';
+            canvasCtx.font = 'bold 21px system-ui, -apple-system, sans-serif'; // +1px
             canvasCtx.fillText('Aplikasi Presensi PTK Nurmilad Boarding School', w / 2, 14);
 
             // ---- BOTTOM INFO (70% dari atas) ----
@@ -766,24 +760,23 @@
             canvasCtx.textBaseline = 'top';
 
             let yPos = startY + 10;
-            canvasCtx.font = 'bold 30px system-ui, -apple-system, sans-serif';
+            canvasCtx.font = 'bold 31px system-ui, -apple-system, sans-serif'; // +1px
             canvasCtx.fillText(`Absen Masuk ${timeStr}`, 16, yPos);
 
-            yPos += 36;
-            canvasCtx.font = '19px system-ui, -apple-system, sans-serif';
+            yPos += 37; // +1 untuk spasi
+            canvasCtx.font = '20px system-ui, -apple-system, sans-serif'; // +1px
             canvasCtx.fillText(`${dayName}, ${dateStr}`, 16, yPos);
 
-            yPos += 30;
-            canvasCtx.font = '17px system-ui, -apple-system, sans-serif';
-            // Potong teks lokasi jika terlalu panjang untuk tampil di canvas
+            yPos += 31; // +1 untuk spasi
+            canvasCtx.font = '18px system-ui, -apple-system, sans-serif'; // +1px
             let displayLoc = locationText;
             if (displayLoc.length > 45) {
                 displayLoc = displayLoc.substring(0, 42) + '...';
             }
             canvasCtx.fillText(displayLoc, 16, yPos);
 
-            yPos += 32;
-            canvasCtx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+            yPos += 33; // +1 untuk spasi
+            canvasCtx.font = 'bold 25px system-ui, -apple-system, sans-serif'; // +1px
             canvasCtx.fillText(`Nama: ${guruNama}`, 16, yPos);
 
             // Reset
@@ -840,14 +833,11 @@
             statusDiv.classList.remove('error', 'success');
             shareContainer.classList.add('hidden');
 
-            // Ambil lokasi GPS terlebih dahulu
             statusDiv.innerHTML = "📡 Mengambil lokasi GPS...";
             let locationInfo;
             try {
                 locationInfo = await getFullLocation();
-                // Status sudah diupdate oleh getFullLocation
             } catch (err) {
-                // Fallback
                 locationInfo = {
                     text: `📍 ${DEFAULT_LOCATION}`,
                     raw: null,
@@ -856,7 +846,6 @@
                 lastLocationText = locationInfo.text;
             }
 
-            // Update status
             statusDiv.innerHTML = "📸 Memotret...";
 
             const ctx = canvas.getContext('2d');
@@ -882,7 +871,6 @@
             const jamMasuk = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             lastJam = jamMasuk;
 
-            // Data lokasi yang disimpan ke Firestore
             const locationData = locationInfo && locationInfo.raw ? {
                 lat: locationInfo.raw.lat,
                 lng: locationInfo.raw.lng,
@@ -947,7 +935,6 @@
                 }
             }
 
-            // Fallback link
             const text =
                 `✅ *Presensi Guru*%0A📛 ${lastGuruNama}%0A🕒 ${lastJam}%0A📅 ${new Date().toLocaleDateString('id-ID')}%0A📍 ${lastLocationText || DEFAULT_LOCATION}%0A📸 Link foto: ${lastFotoUrl}`;
             const waUrl = `https://wa.me/?text=${text}`;
@@ -972,12 +959,9 @@
         // ======================= INIT =======================
         async function init() {
             await loadGuru();
-            // Coba ambil lokasi di awal agar status GPS terlihat
             try {
                 await getFullLocation();
-            } catch (e) {
-                // Abaikan, nanti diambil ulang saat absen
-            }
+            } catch (e) {}
             try {
                 await startCamera('user');
             } catch (e) {
