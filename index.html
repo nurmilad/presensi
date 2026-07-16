@@ -130,13 +130,14 @@
             line-height: 1.3;
         }
 
+        /* ===== ASPEK RATIO 3:4 (POTRET) ===== */
         .camera-wrapper {
             position: relative;
             background: #000;
             border-radius: 18px;
             overflow: hidden;
             margin: 4px 0;
-            aspect-ratio: 1 / 1;
+            aspect-ratio: 3 / 4; /* lebar:tinggi = 3:4 */
         }
 
         video {
@@ -333,7 +334,6 @@
             }
         }
 
-        /* ===== EXTRA TINY ===== */
         @media (max-width: 380px) {
             .header {
                 padding: 2px 6px;
@@ -420,7 +420,8 @@
                     <button class="btn-capture-overlay" id="captureOverlay" aria-label="Ambil foto">📷</button>
                 </div>
             </div>
-            <canvas id="canvas" width="640" height="640"></canvas>
+            <!-- Canvas ukuran 3:4 (600x800) -->
+            <canvas id="canvas" width="600" height="800"></canvas>
             <div id="statusMsg" class="status">Siap presensi</div>
             <div id="shareContainer" class="share-area hidden">
                 <button id="shareBtn" class="btn-share">📤 Bagikan Foto ke WhatsApp</button>
@@ -444,7 +445,6 @@
         const CLOUD_NAME = "dw63zuldz";
         const UPLOAD_PRESET = "presensi_guru";
 
-        // ===== KUSTOMISASI LOKASI DEFAULT =====
         const DEFAULT_LOCATION = "Lempong, Kec. Bola, Kabupaten Wajo, Sulawesi Selatan 90984";
 
         // DOM
@@ -518,17 +518,33 @@
             await startCamera(usingFront ? 'user' : 'environment');
         }
 
-        // ======================= KROP & KOMPRESI =======================
-        function cropAndDrawSquare(ctx, videoElement, targetCanvas) {
+        // ======================= CROP RASIO 3:4 =======================
+        function cropAndDrawPortrait(ctx, videoElement, targetCanvas) {
             const vw = videoElement.videoWidth;
             const vh = videoElement.videoHeight;
-            const size = Math.min(vw, vh);
-            const sx = (vw - size) / 2;
-            const sy = (vh - size) / 2;
-            targetCanvas.width = size;
-            targetCanvas.height = size;
-            ctx.drawImage(videoElement, sx, sy, size, size, 0, 0, size, size);
-            return size;
+            // Rasio target 3:4 (lebar:tinggi)
+            const targetRatio = 3 / 4;
+            const videoRatio = vw / vh;
+
+            let sx, sy, sw, sh;
+            if (videoRatio > targetRatio) {
+                // Video lebih lebar, potong horizontal
+                sh = vh;
+                sw = vh * targetRatio;
+                sx = (vw - sw) / 2;
+                sy = 0;
+            } else {
+                // Video lebih tinggi, potong vertikal
+                sw = vw;
+                sh = vw / targetRatio;
+                sx = 0;
+                sy = (vh - sh) / 2;
+            }
+
+            // Gambar ke canvas dengan ukuran 600x800 (rasio 3:4)
+            targetCanvas.width = 600;
+            targetCanvas.height = 800;
+            ctx.drawImage(videoElement, sx, sy, sw, sh, 0, 0, 600, 800);
         }
 
         function compressImageToBlob(canvas, maxSizeKB = 100) {
@@ -561,7 +577,7 @@
             });
         }
 
-        // ======================= METADATA FOTO =======================
+        // ======================= METADATA FOTO (UKURAN 600x800) =======================
         async function addMetadataToCanvas(canvasCtx, canvasElement, guruNama) {
             const now = new Date();
             const dayName = now.toLocaleDateString('id-ID', { weekday: 'long' });
@@ -581,11 +597,11 @@
                 lastLocationText = locationText;
             }
 
-            const w = canvasElement.width;
-            const h = canvasElement.height;
+            const w = canvasElement.width;   // 600
+            const h = canvasElement.height;  // 800
 
             // ---- TOP HEADER ----
-            const topH = 68;
+            const topH = 72;
             const gradTop = canvasCtx.createLinearGradient(0, 0, 0, topH);
             gradTop.addColorStop(0, 'rgba(0,0,0,0.7)');
             gradTop.addColorStop(1, 'rgba(0,0,0,0)');
@@ -597,7 +613,7 @@
             canvasCtx.fillStyle = '#ffffff';
             canvasCtx.textAlign = 'center';
             canvasCtx.textBaseline = 'top';
-            canvasCtx.font = 'bold 19px system-ui, -apple-system, sans-serif';
+            canvasCtx.font = 'bold 20px system-ui, -apple-system, sans-serif';
             canvasCtx.fillText('Aplikasi Presensi PTK Nurmilad Boarding School', w / 2, 14);
 
             // ---- BOTTOM INFO (70% dari atas) ----
@@ -616,19 +632,19 @@
             canvasCtx.textBaseline = 'top';
 
             let yPos = startY + 10;
-            canvasCtx.font = 'bold 28px system-ui, -apple-system, sans-serif';
+            canvasCtx.font = 'bold 30px system-ui, -apple-system, sans-serif';
             canvasCtx.fillText(`Absen Masuk ${timeStr}`, 16, yPos);
 
-            yPos += 34;
-            canvasCtx.font = '18px system-ui, -apple-system, sans-serif';
+            yPos += 36;
+            canvasCtx.font = '19px system-ui, -apple-system, sans-serif';
             canvasCtx.fillText(`${dayName}, ${dateStr}`, 16, yPos);
 
-            yPos += 28;
-            canvasCtx.font = '16px system-ui, -apple-system, sans-serif';
+            yPos += 30;
+            canvasCtx.font = '17px system-ui, -apple-system, sans-serif';
             canvasCtx.fillText(locationText, 16, yPos);
 
-            yPos += 30;
-            canvasCtx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+            yPos += 32;
+            canvasCtx.font = 'bold 24px system-ui, -apple-system, sans-serif';
             canvasCtx.fillText(`Nama: ${guruNama}`, 16, yPos);
 
             // Reset
@@ -681,12 +697,12 @@
                 return;
             }
 
-            statusDiv.innerHTML = "📷 Mengambil foto 1:1 & lokasi...";
+            statusDiv.innerHTML = "📷 Mengambil foto 3:4 & lokasi...";
             statusDiv.classList.remove('error', 'success');
             shareContainer.classList.add('hidden');
 
             const ctx = canvas.getContext('2d');
-            cropAndDrawSquare(ctx, video, canvas);
+            cropAndDrawPortrait(ctx, video, canvas);
             await addMetadataToCanvas(ctx, canvas, guruNama);
 
             const compressedBlob = await compressImageToBlob(canvas, 100);
