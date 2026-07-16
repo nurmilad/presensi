@@ -137,7 +137,7 @@
             border-radius: 18px;
             overflow: hidden;
             margin: 4px 0;
-            aspect-ratio: 3 / 4; /* lebar:tinggi = 3:4 */
+            aspect-ratio: 3 / 4;
         }
 
         video {
@@ -224,6 +224,26 @@
             line-height: 1.3;
         }
 
+        .status .loc-status {
+            display: inline-block;
+            margin-left: 6px;
+            font-weight: 600;
+        }
+        .loc-status.gps-ok {
+            color: #166534;
+        }
+        .loc-status.gps-fail {
+            color: #991b1b;
+        }
+        .loc-status.gps-loading {
+            color: #b45309;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
         .success {
             background: #dcfce7;
             color: #166534;
@@ -264,7 +284,7 @@
             display: none;
         }
 
-        /* ===== RESPONSIVE KECIL ===== */
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 480px) {
             body {
                 padding: 4px 6px;
@@ -420,7 +440,6 @@
                     <button class="btn-capture-overlay" id="captureOverlay" aria-label="Ambil foto">📷</button>
                 </div>
             </div>
-            <!-- Canvas ukuran 3:4 (600x800) -->
             <canvas id="canvas" width="600" height="800"></canvas>
             <div id="statusMsg" class="status">Siap presensi</div>
             <div id="shareContainer" class="share-area hidden">
@@ -465,6 +484,7 @@
         let lastJam = "";
         let lastImageBlob = null;
         let lastLocationText = "";
+        let lastLocationRaw = null; // simpan objek lokasi lengkap
 
         // ======================= JAM REAL-TIME =======================
         function updateDateTime() {
@@ -522,26 +542,22 @@
         function cropAndDrawPortrait(ctx, videoElement, targetCanvas) {
             const vw = videoElement.videoWidth;
             const vh = videoElement.videoHeight;
-            // Rasio target 3:4 (lebar:tinggi)
             const targetRatio = 3 / 4;
             const videoRatio = vw / vh;
 
             let sx, sy, sw, sh;
             if (videoRatio > targetRatio) {
-                // Video lebih lebar, potong horizontal
                 sh = vh;
                 sw = vh * targetRatio;
                 sx = (vw - sw) / 2;
                 sy = 0;
             } else {
-                // Video lebih tinggi, potong vertikal
                 sw = vw;
                 sh = vw / targetRatio;
                 sx = 0;
                 sy = (vh - sh) / 2;
             }
 
-            // Gambar ke canvas dengan ukuran 600x800 (rasio 3:4)
             targetCanvas.width = 600;
             targetCanvas.height = 800;
             ctx.drawImage(videoElement, sx, sy, sw, sh, 0, 0, 600, 800);
@@ -564,41 +580,159 @@
             });
         }
 
-        // ======================= LOKASI =======================
-        function getCurrentLocation() {
+        // ======================= LOKASI GPS DENGAN RETRY =======================
+        function getLocationWithRetry(maxRetries = 3, timeout = 10000) {
             return new Promise((resolve, reject) => {
-                if (!navigator.geolocation) reject(new Error("Tidak support GPS"));
-                navigator.geolocation.getCurrentPosition(
-                    pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords
-                            .accuracy }),
-                    err => reject(new Error(err.message)),
-                    { enableHighAccuracy: true, timeout: 8000 }
-                );
+                let attempts = 0;
+                let timerId = null;
+
+                const tryGetLocation = () => {
+                    attempts++;
+                    if (timerId) clearTimeout(timerId);
+
+                    const timeoutId = setTimeout(() => {
+                        if (attempts < maxRetries) {
+                            tryGetLocation();
+                        } else {
+                            reject(new Error('Timeout mendapatkan lokasi GPS'));
+                        }
+                    }, timeout);
+
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            clearTimeout(timeoutId);
+                            resolve({
+                                lat: pos.coords.latitude,
+                                lng: pos.coords.longitude,
+                                accuracy: pos.coords.accuracy,
+                                timestamp: pos.timestamp
+                            });
+                        },
+                        (err) => {
+                            clearTimeout(timeoutId);
+                            if (attempts < maxRetries) {
+                                setTimeout(tryGetLocation, 1000);
+                            } else {
+                                reject(new Error(err.message || 'Gagal mendapatkan lokasi GPS'));
+                            }
+                        }, {
+                            enableHighAccuracy: true,
+                            timeout: timeout,
+                            maximumAge: 30000
+                        }
+                    );
+                };
+                tryGetLocation();
             });
         }
 
-        // ======================= METADATA FOTO (UKURAN 600x800) =======================
-        async function addMetadataToCanvas(canvasCtx, canvasElement, guruNama) {
+        // ======================= REVERSE GEOCODING (Nominatim) =======================
+        async function reverseGeocode(lat, lng) {
+            try {
+                const url =
+                    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=16&addressdetails=1&accept-language=id`;
+                const response = await fetch(url, {
+                    headers: {
+                        'User-Agent': 'CEKLOK-NBS-App/1.0'
+                    }
+                });
+                if (!response.ok) throw new Error('Gagal reverse geocode');
+                const data = await response.json();
+                if (data && data.display_name) {
+                    // Bersihkan display_name (hapus kode pos berlebih)
+                    let address = data.display_name;
+                    // Potong bagian yang terlalu panjang
+                    const parts = address.split(',');
+                    if (parts.length > 4) {
+                        address = parts.slice(0, 4).join(',').trim();
+                    }
+                    return address;
+                }
+                return null;
+            } catch (e) {
+                console.warn('Reverse geocode gagal:', e);
+                return null;
+            }
+        }
+
+        // ======================= AMBIL LOKASI LENGKAP =======================
+        async function getFullLocation() {
+            // Tampilkan status loading di statusDiv
+            const locStatus = document.createElement('span');
+            locStatus.className = 'loc-status gps-loading';
+            locStatus.textContent = '🔍 Mencari GPS...';
+            // Cari elemen status, kita akan update nanti
+
+            try {
+                const pos = await getLocationWithRetry(3, 8000);
+                // Dapatkan alamat dari koordinat
+                let address = await reverseGeocode(pos.lat, pos.lng);
+
+                let locationText = '';
+                if (address) {
+                    locationText = `📍 ${address}`;
+                } else {
+                    // Fallback ke koordinat
+                    locationText = `📍 ${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
+                    if (pos.accuracy) {
+                        locationText += ` (±${Math.round(pos.accuracy)}m)`;
+                    }
+                }
+
+                lastLocationRaw = pos;
+                lastLocationText = locationText;
+
+                // Update status
+                const statusMsg = document.getElementById('statusMsg');
+                const existingLoc = statusMsg.querySelector('.loc-status');
+                if (existingLoc) existingLoc.remove();
+
+                const okSpan = document.createElement('span');
+                okSpan.className = 'loc-status gps-ok';
+                okSpan.textContent = '📍 GPS OK';
+                statusMsg.appendChild(okSpan);
+
+                // Tambahkan tooltip lokasi di status
+                return {
+                    text: locationText,
+                    raw: pos,
+                    address: address
+                };
+            } catch (err) {
+                // GPS gagal, pakai default
+                lastLocationText = `📍 ${DEFAULT_LOCATION}`;
+                lastLocationRaw = null;
+
+                const statusMsg = document.getElementById('statusMsg');
+                const existingLoc = statusMsg.querySelector('.loc-status');
+                if (existingLoc) existingLoc.remove();
+
+                const failSpan = document.createElement('span');
+                failSpan.className = 'loc-status gps-fail';
+                failSpan.textContent = '⚠️ GPS gagal, pakai default';
+                statusMsg.appendChild(failSpan);
+
+                return {
+                    text: lastLocationText,
+                    raw: null,
+                    address: null
+                };
+            }
+        }
+
+        // ======================= METADATA FOTO =======================
+        async function addMetadataToCanvas(canvasCtx, canvasElement, guruNama, locationInfo) {
             const now = new Date();
             const dayName = now.toLocaleDateString('id-ID', { weekday: 'long' });
             const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
             const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-            let locationText = DEFAULT_LOCATION;
-            try {
-                const loc = await getCurrentLocation();
-                locationText = `📍 ${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`;
-                if (loc.accuracy) {
-                    locationText += ` (±${Math.round(loc.accuracy)}m)`;
-                }
-                lastLocationText = locationText;
-            } catch (e) {
-                locationText = `📍 ${DEFAULT_LOCATION}`;
-                lastLocationText = locationText;
-            }
+            const locationText = locationInfo ? locationInfo.text : `📍 ${DEFAULT_LOCATION}`;
+            // Simpan untuk share
+            lastLocationText = locationText;
 
-            const w = canvasElement.width;   // 600
-            const h = canvasElement.height;  // 800
+            const w = canvasElement.width;
+            const h = canvasElement.height;
 
             // ---- TOP HEADER ----
             const topH = 72;
@@ -641,7 +775,12 @@
 
             yPos += 30;
             canvasCtx.font = '17px system-ui, -apple-system, sans-serif';
-            canvasCtx.fillText(locationText, 16, yPos);
+            // Potong teks lokasi jika terlalu panjang untuk tampil di canvas
+            let displayLoc = locationText;
+            if (displayLoc.length > 45) {
+                displayLoc = displayLoc.substring(0, 42) + '...';
+            }
+            canvasCtx.fillText(displayLoc, 16, yPos);
 
             yPos += 32;
             canvasCtx.font = 'bold 24px system-ui, -apple-system, sans-serif';
@@ -701,9 +840,28 @@
             statusDiv.classList.remove('error', 'success');
             shareContainer.classList.add('hidden');
 
+            // Ambil lokasi GPS terlebih dahulu
+            statusDiv.innerHTML = "📡 Mengambil lokasi GPS...";
+            let locationInfo;
+            try {
+                locationInfo = await getFullLocation();
+                // Status sudah diupdate oleh getFullLocation
+            } catch (err) {
+                // Fallback
+                locationInfo = {
+                    text: `📍 ${DEFAULT_LOCATION}`,
+                    raw: null,
+                    address: null
+                };
+                lastLocationText = locationInfo.text;
+            }
+
+            // Update status
+            statusDiv.innerHTML = "📸 Memotret...";
+
             const ctx = canvas.getContext('2d');
             cropAndDrawPortrait(ctx, video, canvas);
-            await addMetadataToCanvas(ctx, canvas, guruNama);
+            await addMetadataToCanvas(ctx, canvas, guruNama, locationInfo);
 
             const compressedBlob = await compressImageToBlob(canvas, 100);
             lastImageBlob = compressedBlob;
@@ -724,6 +882,20 @@
             const jamMasuk = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             lastJam = jamMasuk;
 
+            // Data lokasi yang disimpan ke Firestore
+            const locationData = locationInfo && locationInfo.raw ? {
+                lat: locationInfo.raw.lat,
+                lng: locationInfo.raw.lng,
+                accuracy: locationInfo.raw.accuracy,
+                address: locationInfo.address || null,
+                text: locationInfo.text
+            } : {
+                text: DEFAULT_LOCATION,
+                address: null,
+                lat: null,
+                lng: null
+            };
+
             const dataPresensi = {
                 guruId,
                 guruNama,
@@ -731,7 +903,11 @@
                 jamMasuk,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 fotoUrl,
-                location: lastLocationText || DEFAULT_LOCATION
+                location: locationData.text || DEFAULT_LOCATION,
+                locationLat: locationData.lat || null,
+                locationLng: locationData.lng || null,
+                locationAccuracy: locationData.accuracy || null,
+                locationAddress: locationData.address || null
             };
 
             try {
@@ -796,6 +972,12 @@
         // ======================= INIT =======================
         async function init() {
             await loadGuru();
+            // Coba ambil lokasi di awal agar status GPS terlihat
+            try {
+                await getFullLocation();
+            } catch (e) {
+                // Abaikan, nanti diambil ulang saat absen
+            }
             try {
                 await startCamera('user');
             } catch (e) {
