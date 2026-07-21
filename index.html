@@ -9,43 +9,466 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
     </script>
     <style>
-        /* (CSS sama seperti sebelumnya - tidak diubah) */
-        * { margin:0; padding:0; box-sizing:border-box; font-family:system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-        body { background:#f1f5f9; min-height:100vh; padding:6px 8px; display:flex; align-items:flex-start; justify-content:center; }
-        .container { max-width:550px; width:100%; margin:0 auto; }
-        .header { display:flex; justify-content:space-between; align-items:center; background:white; padding:4px 10px; border-radius:30px; margin-bottom:6px; box-shadow:0 1px 4px rgba(0,0,0,0.04); min-height:36px; }
-        .header-left { display:flex; align-items:center; gap:4px; }
-        .app-title { font-size:0.75rem; font-weight:700; color:#0f172a; letter-spacing:0.3px; line-height:1.2; }
-        .app-title span { color:#3b82f6; }
-        .datetime { font-size:0.6rem; font-weight:500; color:#1e293b; background:#f1f5f9; padding:2px 8px; border-radius:20px; white-space:nowrap; line-height:1.4; }
-        .icon-btn { background:transparent; border:none; font-size:1.3rem; cursor:pointer; padding:4px; border-radius:30px; width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; transition:background 0.2s; line-height:1; }
-        .icon-btn:hover { background:#e2e8f0; }
-        .right-icons { display:flex; gap:2px; align-items:center; }
-        .card { background:white; border-radius:18px; padding:10px 12px; margin-bottom:8px; border:1px solid #e2e8f0; box-shadow:0 1px 4px rgba(0,0,0,0.02); }
-        .card-title { font-size:0.8rem; font-weight:600; margin-bottom:6px; border-left:3px solid #3b82f6; padding-left:8px; color:#0f172a; line-height:1.3; }
-        select { width:100%; padding:8px 12px; font-size:0.85rem; border-radius:40px; border:1px solid #cbd5e1; background:white; cursor:pointer; outline:none; line-height:1.3; }
-        .camera-wrapper { position:relative; background:#000; border-radius:18px; overflow:hidden; margin:4px 0; aspect-ratio:3/4; }
-        video { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; display:block; }
-        canvas { display:none; }
-        .camera-overlay { position:absolute; bottom:14px; left:0; right:0; display:flex; justify-content:center; pointer-events:none; }
-        .btn-capture-overlay { pointer-events:auto; width:60px; height:60px; background:transparent; border:3px solid white; border-radius:50%; box-shadow:0 2px 10px rgba(0,0,0,0.2); cursor:pointer; transition:transform 0.1s ease, background 0.2s; display:flex; align-items:center; justify-content:center; font-size:2.2rem; color:white; backdrop-filter:blur(2px); }
-        .btn-capture-overlay:active { transform:scale(0.92); background:rgba(255,255,255,0.2); }
-        .btn-switch-overlay { pointer-events:auto; position:absolute; top:12px; right:12px; width:38px; height:38px; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.25); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:white; cursor:pointer; transition:background 0.2s; z-index:2; }
-        .btn-switch-overlay:active { background:rgba(0,0,0,0.9); transform:scale(0.96); }
-        .status { margin-top:8px; padding:6px 10px; border-radius:40px; background:#f8fafc; text-align:center; font-size:0.75rem; color:#334155; line-height:1.3; }
-        .status .loc-status { display:inline-block; margin-left:6px; font-weight:600; font-size:0.75rem; }
-        .loc-status.gps-ok { color:#166534; }
-        .loc-status.gps-fail { color:#991b1b; }
-        .loc-status.gps-loading { color:#b45309; animation:blink 1s infinite; }
-        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
-        .success { background:#dcfce7; color:#166534; }
-        .error { background:#fee2e2; color:#991b1b; }
-        .share-area { margin-top:8px; text-align:center; }
-        .btn-share { background:#25D366; color:white; border:none; padding:8px 16px; border-radius:30px; font-size:0.8rem; font-weight:bold; display:inline-flex; align-items:center; gap:6px; cursor:pointer; transition:transform 0.1s; box-shadow:0 2px 6px rgba(0,0,0,0.08); line-height:1.3; }
-        .btn-share:active { transform:scale(0.96); }
-        .hidden { display:none; }
-        @media (max-width:480px) { body { padding:4px 6px; } .header { padding:3px 8px; min-height:32px; border-radius:24px; margin-bottom:4px; } .app-title { font-size:0.65rem; } .datetime { font-size:0.55rem; padding:1px 6px; } .icon-btn { width:26px; height:26px; font-size:1.1rem; padding:2px; } .card { padding:8px 10px; margin-bottom:6px; border-radius:14px; } .card-title { font-size:0.7rem; margin-bottom:4px; padding-left:6px; } select { padding:6px 10px; font-size:0.75rem; border-radius:30px; } .camera-wrapper { border-radius:14px; margin:2px 0; } .btn-capture-overlay { width:50px; height:50px; font-size:1.8rem; border-width:2.5px; } .btn-switch-overlay { width:32px; height:32px; font-size:1rem; top:8px; right:8px; } .status { font-size:0.65rem; padding:4px 8px; margin-top:6px; } .status .loc-status { font-size:0.65rem; } .btn-share { font-size:0.7rem; padding:6px 14px; } .share-area { margin-top:6px; } }
-        @media (max-width:380px) { .header { padding:2px 6px; min-height:28px; } .app-title { font-size:0.55rem; } .datetime { font-size:0.5rem; padding:1px 4px; } .icon-btn { width:22px; height:22px; font-size:0.95rem; } .card { padding:6px 8px; margin-bottom:4px; border-radius:12px; } .card-title { font-size:0.6rem; margin-bottom:3px; } select { padding:5px 8px; font-size:0.65rem; } .btn-capture-overlay { width:44px; height:44px; font-size:1.5rem; } .btn-switch-overlay { width:28px; height:28px; font-size:0.85rem; top:6px; right:6px; } .status { font-size:0.55rem; padding:3px 6px; margin-top:4px; } .status .loc-status { font-size:0.55rem; } .btn-share { font-size:0.6rem; padding:5px 12px; } }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #f1f5f9;
+            min-height: 100vh;
+            padding: 6px 8px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 550px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 4px 10px;
+            border-radius: 30px;
+            margin-bottom: 6px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+            min-height: 36px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .app-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: 0.3px;
+            line-height: 1.2;
+        }
+        .app-title span {
+            color: #3b82f6;
+        }
+
+        .datetime {
+            font-size: 0.6rem;
+            font-weight: 500;
+            color: #1e293b;
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+            line-height: 1.4;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 30px;
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            line-height: 1;
+        }
+
+        .icon-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .right-icons {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .card-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            border-left: 3px solid #3b82f6;
+            padding-left: 8px;
+            color: #0f172a;
+            line-height: 1.3;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            border-radius: 40px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            cursor: pointer;
+            outline: none;
+            line-height: 1.3;
+        }
+
+        .camera-wrapper {
+            position: relative;
+            background: #000;
+            border-radius: 18px;
+            overflow: hidden;
+            margin: 4px 0;
+            aspect-ratio: 3 / 4;
+        }
+
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            bottom: 14px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        /* ===== TOMBOL SHUTTER – MERAH POLOS DENGAN EFEK KLIK KEREN ===== */
+        .btn-capture-overlay {
+            pointer-events: auto;
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: block;
+            border: 4px solid rgba(255, 255, 255, 0.7);
+            background: radial-gradient(circle at 35% 30%, #ff4757, #c0392b 80%, #a93226);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            position: relative;
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+        }
+
+        /* efek pantulan glossy ringan */
+        .btn-capture-overlay::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 22%;
+            width: 32%;
+            height: 14%;
+            background: radial-gradient(ellipse, rgba(255, 255, 255, 0.5) 0%, transparent 70%);
+            border-radius: 50%;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* ===== EFEK KETIKA DIKLIK ===== */
+        .btn-capture-overlay:active {
+            transform: scale(0.88);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 30px rgba(255, 50, 50, 0.6);
+            transition: transform 0.08s ease, box-shadow 0.08s ease;
+        }
+
+        /* efek ripple / gelombang */
+        .btn-capture-overlay:active::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
+            border-radius: 50%;
+            border: 4px solid rgba(255, 80, 80, 0.7);
+            animation: shutterRipple 0.4s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes shutterRipple {
+            0% {
+                transform: scale(0.8);
+                opacity: 1;
+                border-width: 4px;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+                border-width: 1px;
+            }
+        }
+
+        /* efek pulse glow saat ditekan (cahaya merah berdenyut) */
+        .btn-capture-overlay:active::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 0, 0, 0.3) 0%, transparent 70%);
+            animation: shutterGlow 0.5s ease-out forwards;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        @keyframes shutterGlow {
+            0% {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            30% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.4);
+            }
+        }
+
+        /* ===== STATUS ===== */
+        .status {
+            margin-top: 8px;
+            padding: 6px 10px;
+            border-radius: 40px;
+            background: #f8fafc;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #334155;
+            line-height: 1.3;
+        }
+
+        .status .loc-status {
+            display: inline-block;
+            margin-left: 6px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+        .loc-status.gps-ok {
+            color: #166534;
+        }
+        .loc-status.gps-fail {
+            color: #991b1b;
+        }
+        .loc-status.gps-loading {
+            color: #b45309;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .share-area {
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .btn-share {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            line-height: 1.3;
+        }
+
+        .btn-share:active {
+            transform: scale(0.96);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 480px) {
+            body {
+                padding: 4px 6px;
+            }
+            .header {
+                padding: 3px 8px;
+                min-height: 32px;
+                border-radius: 24px;
+                margin-bottom: 4px;
+            }
+            .app-title {
+                font-size: 0.65rem;
+            }
+            .datetime {
+                font-size: 0.55rem;
+                padding: 1px 6px;
+            }
+            .icon-btn {
+                width: 26px;
+                height: 26px;
+                font-size: 1.1rem;
+                padding: 2px;
+            }
+            .card {
+                padding: 8px 10px;
+                margin-bottom: 6px;
+                border-radius: 14px;
+            }
+            .card-title {
+                font-size: 0.7rem;
+                margin-bottom: 4px;
+                padding-left: 6px;
+            }
+            select {
+                padding: 6px 10px;
+                font-size: 0.75rem;
+                border-radius: 30px;
+            }
+            .camera-wrapper {
+                border-radius: 14px;
+                margin: 2px 0;
+            }
+            .btn-capture-overlay {
+                width: 64px;
+                height: 64px;
+                border-width: 3px;
+                box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+            }
+            .btn-capture-overlay:active {
+                transform: scale(0.87);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), 0 0 25px rgba(255, 50, 50, 0.5);
+            }
+            .btn-capture-overlay:active::before {
+                top: -6px;
+                left: -6px;
+                right: -6px;
+                bottom: -6px;
+                border-width: 3px;
+            }
+            .status {
+                font-size: 0.65rem;
+                padding: 4px 8px;
+                margin-top: 6px;
+            }
+            .status .loc-status {
+                font-size: 0.65rem;
+            }
+            .btn-share {
+                font-size: 0.7rem;
+                padding: 6px 14px;
+            }
+            .share-area {
+                margin-top: 6px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .header {
+                padding: 2px 6px;
+                min-height: 28px;
+            }
+            .app-title {
+                font-size: 0.55rem;
+            }
+            .datetime {
+                font-size: 0.5rem;
+                padding: 1px 4px;
+            }
+            .icon-btn {
+                width: 22px;
+                height: 22px;
+                font-size: 0.95rem;
+            }
+            .card {
+                padding: 6px 8px;
+                margin-bottom: 4px;
+                border-radius: 12px;
+            }
+            .card-title {
+                font-size: 0.6rem;
+                margin-bottom: 3px;
+            }
+            select {
+                padding: 5px 8px;
+                font-size: 0.65rem;
+            }
+            .btn-capture-overlay {
+                width: 56px;
+                height: 56px;
+                border-width: 2.5px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            }
+            .btn-capture-overlay:active {
+                transform: scale(0.85);
+                box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2), 0 0 20px rgba(255, 50, 50, 0.4);
+            }
+            .btn-capture-overlay:active::before {
+                top: -5px;
+                left: -5px;
+                right: -5px;
+                bottom: -5px;
+                border-width: 2.5px;
+            }
+            .status {
+                font-size: 0.55rem;
+                padding: 3px 6px;
+                margin-top: 4px;
+            }
+            .status .loc-status {
+                font-size: 0.55rem;
+            }
+            .btn-share {
+                font-size: 0.6rem;
+                padding: 5px 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -72,9 +495,8 @@
             <div class="card-title">📸 Presensi</div>
             <div class="camera-wrapper">
                 <video id="video" autoplay playsinline muted></video>
-                <button class="btn-switch-overlay" id="switchCameraOverlay" aria-label="Ganti kamera">🔄</button>
                 <div class="camera-overlay">
-                    <button class="btn-capture-overlay" id="captureOverlay" aria-label="Ambil foto">📷</button>
+                    <button class="btn-capture-overlay" id="captureOverlay" aria-label="Ambil foto"></button>
                 </div>
             </div>
             <canvas id="canvas" width="600" height="800"></canvas>
@@ -115,7 +537,6 @@
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const captureBtn = document.getElementById('captureOverlay');
-        const switchBtn = document.getElementById('switchCameraOverlay');
         const statusDiv = document.getElementById('statusMsg');
         const liveDateTime = document.getElementById('liveDateTime');
         const shareContainer = document.getElementById('shareContainer');
@@ -161,26 +582,21 @@
         }
 
         // ======================= KAMERA =======================
-        async function startCamera(faceMode = 'user') {
+        async function startCamera() {
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
             }
             try {
                 currentStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: { exact: faceMode } }
+                    video: { facingMode: { exact: 'user' } }
                 });
             } catch (err) {
                 currentStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: faceMode }
+                    video: { facingMode: 'user' }
                 });
             }
             video.srcObject = currentStream;
             await video.play();
-        }
-
-        async function switchCameraHandler() {
-            usingFront = !usingFront;
-            await startCamera(usingFront ? 'user' : 'environment');
         }
 
         // ======================= CROP RASIO 3:4 =======================
@@ -386,7 +802,7 @@
             if (locationText) {
                 yPos += 31;
                 canvasCtx.font = '18px system-ui, -apple-system, sans-serif';
-                let displayLoc = locationText.length > 45 ? locationText.substring(0,42)+'...' : locationText;
+                let displayLoc = locationText.length > 45 ? locationText.substring(0, 42) + '...' : locationText;
                 canvasCtx.fillText(displayLoc, 16, yPos);
             }
             if (coordText) {
@@ -403,9 +819,9 @@
             canvasCtx.textBaseline = 'alphabetic';
         }
 
-        // ======================= CEK ABSEN HARI INI (pakai tanggal lokal) =======================
+        // ======================= CEK ABSEN HARI INI =======================
         async function sudahAbsenHariIni(guruId) {
-            const today = getLocalDate(); // ← perbaikan
+            const today = getLocalDate();
             const q = await db.collection('presensi')
                 .where('guruId', '==', guruId)
                 .where('tanggal', '==', today)
@@ -481,7 +897,7 @@
             }
 
             const now = new Date();
-            const tanggal = getLocalDate(); // ← perbaikan
+            const tanggal = getLocalDate();
             const jamMasuk = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             lastJam = jamMasuk;
 
@@ -566,14 +982,13 @@
             }
         };
         captureBtn.onclick = prosesAbsen;
-        switchBtn.onclick = switchCameraHandler;
         shareBtn.onclick = shareToWA;
 
         // ======================= INIT =======================
         async function init() {
             await loadGuru();
-            try { await getFullLocation(); } catch(e) {}
-            try { await startCamera('user'); } catch(e) { statusDiv.innerHTML = "❌ Izin kamera ditolak"; }
+            try { await getFullLocation(); } catch (e) {}
+            try { await startCamera(); } catch (e) { statusDiv.innerHTML = "❌ Izin kamera ditolak"; }
         }
         init();
     </script>
