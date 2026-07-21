@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Presensi Guru - Rekap Bulanan</title>
+    <title>Laporan Presensi Guru - Rekap</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
@@ -46,7 +46,7 @@
             color: #334155;
             font-size: 10px;
         }
-        select, button {
+        select, button, input[type="date"] {
             padding: 6px 12px;
             border-radius: 30px;
             border: 1px solid #cbd5e1;
@@ -82,12 +82,41 @@
             background: #334155;
         }
 
+        /* Toggle mode */
+        .mode-toggle {
+            display: flex;
+            gap: 4px;
+            background: #e2e8f0;
+            border-radius: 30px;
+            padding: 3px;
+            align-items: center;
+        }
+        .mode-toggle .mode-btn {
+            padding: 4px 14px;
+            border: none;
+            border-radius: 30px;
+            background: transparent;
+            font-size: 10px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .mode-toggle .mode-btn.active {
+            background: white;
+            color: #1e40af;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        .mode-toggle .mode-btn:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
         /* Elemen khusus cetak – disembunyikan di layar */
         .print-only {
             display: none;
         }
 
-        /* Tabel rekap */
+        /* ===== TABEL BULANAN (tetap) ===== */
         .table-wrap {
             overflow-x: auto;
             margin-top: 8px;
@@ -105,7 +134,6 @@
             text-align: center;
             white-space: nowrap;
         }
-        /* Kolom Nama - sticky */
         th:first-child,
         td:first-child {
             position: sticky;
@@ -118,12 +146,10 @@
             background: #f8fafc;
             font-weight: 500;
         }
-        /* Header sticky juga */
         th:first-child {
             z-index: 3;
             background: #eef2ff;
         }
-        /* Kolom tanggal seragam */
         th:not(:first-child):not(:last-child),
         td:not(:first-child):not(:last-child) {
             min-width: 28px;
@@ -149,12 +175,88 @@
             background: #f1f5f9;
             font-weight: bold;
         }
-        /* Sticky untuk total row */
         tr.total-row td:first-child {
             background: #f1f5f9;
         }
 
-        /* Popup foto */
+        /* ===== GRID HARIAN ===== */
+        .daily-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .daily-grid .card-item {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: transform 0.15s;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+        }
+        .daily-grid .card-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        .daily-grid .card-item .photo-wrapper {
+            position: relative;
+            background: #000;
+            aspect-ratio: 3 / 4;
+            overflow: hidden;
+        }
+        .daily-grid .card-item .photo-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .daily-grid .card-item .photo-wrapper .overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 6px 8px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.6));
+            color: white;
+            font-size: 9px;
+            font-weight: 600;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+        .daily-grid .card-item .info {
+            padding: 6px 8px 8px;
+            font-size: 9px;
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+        }
+        .daily-grid .card-item .info .name {
+            font-weight: 700;
+            font-size: 10px;
+            color: #0f172a;
+        }
+        .daily-grid .card-item .info .time {
+            color: #475569;
+        }
+        .daily-grid .card-item .info .loc {
+            color: #64748b;
+            font-size: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .daily-grid .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: #94a3b8;
+            padding: 40px 0;
+            font-size: 12px;
+        }
+
+        /* Popup foto (modal) tetap sama */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -216,7 +318,6 @@
             .print-only {
                 display: block !important;
             }
-            /* Header cetak */
             .print-header {
                 text-align: center;
                 margin-bottom: 12px;
@@ -242,7 +343,6 @@
                 border-top: 2px solid #000;
                 margin: 4px 0 8px;
             }
-
             .table-wrap {
                 overflow: visible !important;
             }
@@ -289,12 +389,36 @@
                 border-radius: 0;
                 background: transparent;
             }
-            /* Sticky tidak perlu di print */
             th:first-child, td:first-child {
                 position: static !important;
             }
 
-            /* Footer cetak - rata kanan */
+            /* Cetak untuk grid harian */
+            .daily-grid {
+                display: grid !important;
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 10px !important;
+                page-break-inside: avoid;
+            }
+            .daily-grid .card-item {
+                break-inside: avoid;
+                border: 1px solid #ccc;
+                box-shadow: none !important;
+                transform: none !important;
+            }
+            .daily-grid .card-item .photo-wrapper {
+                aspect-ratio: 3/4;
+            }
+            .daily-grid .card-item .photo-wrapper img {
+                max-height: 120px;
+                object-fit: cover;
+            }
+            .daily-grid .card-item .info .loc {
+                white-space: normal;
+                overflow: visible;
+                text-overflow: clip;
+            }
+
             .print-footer {
                 margin-top: 16px;
                 display: flex;
@@ -328,16 +452,32 @@
 <body>
 <div class="container">
     <div class="card no-print">
-        <h2 style="font-size:14px; margin-bottom:10px; border-left:4px solid #3b82f6; padding-left:10px;">📊 Rekap Presensi Bulanan</h2>
+        <h2 style="font-size:14px; margin-bottom:10px; border-left:4px solid #3b82f6; padding-left:10px;">📊 Rekap Presensi</h2>
+
+        <!-- Filter bar -->
         <div class="filter-bar">
-            <div class="filter-group">
+            <!-- Mode toggle -->
+            <div class="mode-toggle" id="modeToggle">
+                <button class="mode-btn active" data-mode="monthly">📆 Bulanan</button>
+                <button class="mode-btn" data-mode="daily">📅 Harian</button>
+            </div>
+
+            <!-- Filter bulanan -->
+            <div class="filter-group" id="monthlyFilters">
                 <label>Bulan</label>
                 <select id="bulanSelect"></select>
             </div>
-            <div class="filter-group">
+            <div class="filter-group" id="monthlyFilters2">
                 <label>Tahun</label>
                 <select id="tahunSelect"></select>
             </div>
+
+            <!-- Filter harian -->
+            <div class="filter-group" id="dailyFilters" style="display:none;">
+                <label>Tanggal</label>
+                <input type="date" id="dateInput">
+            </div>
+
             <button id="filterBtn">🔍 Tampilkan</button>
             <button id="printBtn" class="btn-print">🖨 Cetak</button>
             <a href="index.html" class="back-link">← Kembali</a>
@@ -350,14 +490,14 @@
             <div class="sekolah">YAYASAN KARYA CIPTA<br>NURMILAD BOARDING SCHOOL</div>
             <div style="font-size:10px;">nurmiladboardingschool@gmail.com | www.nurmilad.sch.id</div>
             <div class="line"></div>
-            <div class="judul">LAPORAN KEHADIRAN</div>
+            <div class="judul" id="printJudul">LAPORAN KEHADIRAN</div>
             <div class="subjudul" id="printBulanTahun">Bulan : ...  Tahun : ....</div>
             <div class="line" style="border-top:1px dashed #888; margin-top:2px;"></div>
         </div>
 
-        <!-- Tempat tabel -->
-        <div id="laporanTable">
-            <p style="text-align:center; font-size:12px;">Pilih bulan dan tahun untuk menampilkan rekap.</p>
+        <!-- Tempat konten (tabel bulanan atau grid harian) -->
+        <div id="laporanContent">
+            <p style="text-align:center; font-size:12px;">Pilih bulan/tanggal dan klik Tampilkan.</p>
         </div>
 
         <!-- Footer cetak (muncul saat print) -->
@@ -396,19 +536,25 @@
     // DOM
     const bulanSelect = document.getElementById('bulanSelect');
     const tahunSelect = document.getElementById('tahunSelect');
+    const dateInput = document.getElementById('dateInput');
     const filterBtn = document.getElementById('filterBtn');
     const printBtn = document.getElementById('printBtn');
-    const laporanDiv = document.getElementById('laporanTable');
+    const laporanContent = document.getElementById('laporanContent');
     const modalOverlay = document.getElementById('fotoModal');
     const modalImg = document.getElementById('modalImg');
     const modalInfo = document.getElementById('modalInfo');
     const modalClose = document.getElementById('modalClose');
-
-    // Elemen cetak
+    const modeToggle = document.getElementById('modeToggle');
+    const monthlyFilters = document.getElementById('monthlyFilters');
+    const monthlyFilters2 = document.getElementById('monthlyFilters2');
+    const dailyFilters = document.getElementById('dailyFilters');
     const printBulanTahun = document.getElementById('printBulanTahun');
     const printTanggal = document.getElementById('printTanggal');
+    const printJudul = document.getElementById('printJudul');
 
-    // Generate pilihan bulan
+    let currentMode = 'monthly'; // 'monthly' or 'daily'
+
+    // ======================= GENERATE PILIHAN BULAN & TAHUN =======================
     const bulanNama = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
     for (let i = 0; i < 12; i++) {
         let opt = document.createElement('option');
@@ -423,26 +569,60 @@
         opt.textContent = y;
         tahunSelect.appendChild(opt);
     }
-    bulanSelect.value = new Date().getMonth()+1;
-    tahunSelect.value = tahunSekarang;
+    // Set default
+    const now = new Date();
+    bulanSelect.value = String(now.getMonth()+1).padStart(2,'0');
+    tahunSelect.value = now.getFullYear();
+    // Set date input default today
+    dateInput.value = now.toISOString().slice(0,10);
 
-    // Data global
+    // ======================= MODE TOGGLE =======================
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentMode = this.dataset.mode;
+            if (currentMode === 'monthly') {
+                monthlyFilters.style.display = '';
+                monthlyFilters2.style.display = '';
+                dailyFilters.style.display = 'none';
+                // update print header
+                printJudul.textContent = 'LAPORAN KEHADIRAN BULANAN';
+            } else {
+                monthlyFilters.style.display = 'none';
+                monthlyFilters2.style.display = 'none';
+                dailyFilters.style.display = '';
+                printJudul.textContent = 'LAPORAN KEHADIRAN HARIAN';
+            }
+            // Auto-load after mode change?
+            // We'll let user click filter.
+        });
+    });
+
+    // ======================= LOAD LAPORAN =======================
+    async function loadLaporan() {
+        if (currentMode === 'monthly') {
+            await loadMonthlyReport();
+        } else {
+            await loadDailyReport();
+        }
+    }
+
+    // ===== MONTHLY REPORT (existing) =====
     let guruList = [];
     let presensiMap = {};
 
-    // ======================= LOAD DATA =======================
-    async function loadLaporan() {
+    async function loadMonthlyReport() {
         const bulan = bulanSelect.value;
         const tahun = tahunSelect.value;
         const lastDay = new Date(tahun, bulan, 0).getDate();
 
-        laporanDiv.innerHTML = '<p style="text-align:center;">⏳ Memuat data...</p>';
+        laporanContent.innerHTML = '<p style="text-align:center;">⏳ Memuat data...</p>';
 
         try {
-            // 1. Ambil semua guru
             const guruSnap = await db.collection('guru').orderBy('nama').get();
             if (guruSnap.empty) {
-                laporanDiv.innerHTML = '<p style="text-align:center;">⚠️ Belum ada data guru. Tambahkan guru terlebih dahulu.</p>';
+                laporanContent.innerHTML = '<p style="text-align:center;">⚠️ Belum ada data guru. Tambahkan guru terlebih dahulu.</p>';
                 return;
             }
             guruList = [];
@@ -450,7 +630,6 @@
                 guruList.push({ id: doc.id, nama: doc.data().nama });
             });
 
-            // 2. Ambil presensi untuk bulan ini
             const startDate = `${tahun}-${bulan}-01`;
             const endDate = `${tahun}-${bulan}-${String(lastDay).padStart(2,'0')}`;
             const presSnap = await db.collection('presensi')
@@ -458,44 +637,34 @@
                 .where('tanggal', '<=', endDate)
                 .get();
 
-            // 3. Bangun map presensi
             presensiMap = {};
             presSnap.forEach(doc => {
                 const data = doc.data();
                 const key = data.guruId + '_' + data.tanggal;
                 let jam = data.jamMasuk || '-';
-                if (jam.length >= 5) {
-                    jam = jam.substring(0, 5); // HH:mm
-                }
+                if (jam.length >= 5) jam = jam.substring(0,5);
                 presensiMap[key] = {
                     jam: jam,
                     foto: data.fotoUrl || ''
                 };
             });
 
-            // 4. Buat tabel
-            renderTable(bulan, tahun, lastDay);
+            renderMonthlyTable(bulan, tahun, lastDay);
 
-            // 5. Update informasi cetak
+            // Update print info
             const bulanNamaIndo = bulanNama[parseInt(bulan)-1];
             printBulanTahun.textContent = `Bulan : ${bulanNamaIndo}  Tahun : ${tahun}`;
-            // Tanggal akhir bulan
             const tglAkhir = new Date(tahun, bulan, 0);
-            const tglStr = tglAkhir.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
-            printTanggal.textContent = `Tanggal : ${tglStr}`;
-
+            printTanggal.textContent = `Tanggal : ${tglAkhir.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' })}`;
         } catch (err) {
             console.error(err);
-            laporanDiv.innerHTML = `<div style="color:#dc2626; background:#fee2e2; padding:12px; border-radius:16px;">
-                ❌ Gagal memuat data: ${err.message}
-            </div>`;
+            laporanContent.innerHTML = `<div style="color:#dc2626; background:#fee2e2; padding:12px; border-radius:16px;">
+                ❌ Gagal memuat data: ${err.message}</div>`;
         }
     }
 
-    // ======================= RENDER TABEL =======================
-    function renderTable(bulan, tahun, lastDay) {
+    function renderMonthlyTable(bulan, tahun, lastDay) {
         let html = '<div class="table-wrap"><table>';
-        // Header
         html += '<thead><tr><th>Nama</th>';
         for (let d = 1; d <= lastDay; d++) {
             html += `<th>${d}</th>`;
@@ -523,7 +692,6 @@
             totalHadirSemua += totalHadir;
         });
 
-        // Baris total
         html += `<tr class="total-row"><td><strong>Total</strong></td>`;
         for (let d = 1; d <= lastDay; d++) {
             const tanggalStr = `${tahun}-${bulan}-${String(d).padStart(2,'0')}`;
@@ -535,16 +703,15 @@
             html += `<td>${count}</td>`;
         }
         html += `<td><strong>${totalHadirSemua}</strong></td></tr>`;
-
         html += '</tbody></table></div>';
-        laporanDiv.innerHTML = html;
+        laporanContent.innerHTML = html;
 
-        // Event click pada sel jam
+        // Event click pada sel jam (untuk popup foto)
         document.querySelectorAll('.jam-cell').forEach(cell => {
             const foto = cell.dataset.foto;
             if (foto) {
                 cell.style.cursor = 'pointer';
-                cell.addEventListener('click', function(e) {
+                cell.addEventListener('click', function() {
                     const guru = this.dataset.guru;
                     const tanggal = this.dataset.tanggal;
                     const jam = this.dataset.jam;
@@ -554,7 +721,92 @@
         });
     }
 
-    // ======================= POPUP FOTO =======================
+    // ===== DAILY REPORT (GRID FOTO) =====
+    async function loadDailyReport() {
+        const selectedDate = dateInput.value;
+        if (!selectedDate) {
+            laporanContent.innerHTML = '<p style="text-align:center; color:#dc2626;">Silakan pilih tanggal.</p>';
+            return;
+        }
+
+        laporanContent.innerHTML = '<p style="text-align:center;">⏳ Memuat data...</p>';
+
+        try {
+            const presSnap = await db.collection('presensi')
+                .where('tanggal', '==', selectedDate)
+                .get();
+
+            if (presSnap.empty) {
+                laporanContent.innerHTML = `<div class="daily-grid"><div class="empty-state">📭 Tidak ada presensi pada tanggal ${selectedDate}.</div></div>`;
+                // Update print header
+                printBulanTahun.textContent = `Tanggal : ${selectedDate}`;
+                printTanggal.textContent = `Tanggal : ${selectedDate}`;
+                return;
+            }
+
+            // Kumpulkan data
+            const items = [];
+            presSnap.forEach(doc => {
+                const data = doc.data();
+                items.push({
+                    id: doc.id,
+                    guruNama: data.guruNama || 'Tidak diketahui',
+                    jamMasuk: data.jamMasuk || '-',
+                    fotoUrl: data.fotoUrl || '',
+                    location: data.location || '',
+                    locationLat: data.locationLat || null,
+                    locationLng: data.locationLng || null,
+                });
+            });
+
+            // Urutkan berdasarkan jam (opsional)
+            items.sort((a,b) => (a.jamMasuk > b.jamMasuk) ? 1 : -1);
+
+            renderDailyGrid(items, selectedDate);
+
+            // Update print info
+            printBulanTahun.textContent = `Tanggal : ${selectedDate}`;
+            printTanggal.textContent = `Tanggal : ${selectedDate}`;
+        } catch (err) {
+            console.error(err);
+            laporanContent.innerHTML = `<div style="color:#dc2626; background:#fee2e2; padding:12px; border-radius:16px;">
+                ❌ Gagal memuat data harian: ${err.message}</div>`;
+        }
+    }
+
+    function renderDailyGrid(items, date) {
+        if (items.length === 0) {
+            laporanContent.innerHTML = `<div class="daily-grid"><div class="empty-state">📭 Tidak ada presensi pada tanggal ${date}.</div></div>`;
+            return;
+        }
+
+        let html = `<div class="daily-grid">`;
+        items.forEach(item => {
+            const foto = item.fotoUrl || '';
+            const name = escapeHtml(item.guruNama);
+            const jam = escapeHtml(item.jamMasuk);
+            const loc = escapeHtml(item.location) || '';
+
+            html += `
+                <div class="card-item">
+                    <div class="photo-wrapper">
+                        ${foto ? `<img src="${foto}" alt="Foto ${name}" loading="lazy" onclick="showFoto('${foto}','${name}','${date}','${jam}')">` : 
+                        `<div style="background:#e2e8f0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:20px;">📷</div>`}
+                        <div class="overlay">${name}</div>
+                    </div>
+                    <div class="info">
+                        <div class="name">${name}</div>
+                        <div class="time">🕒 ${jam}</div>
+                        ${loc ? `<div class="loc">📍 ${loc}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+        laporanContent.innerHTML = html;
+    }
+
+    // ======================= POPUP FOTO (sama) =======================
     function showFoto(fotoUrl, guru, tanggal, jam) {
         if (!fotoUrl) {
             alert('Tidak ada foto untuk presensi ini.');
@@ -589,7 +841,8 @@
     filterBtn.addEventListener('click', loadLaporan);
     printBtn.addEventListener('click', () => window.print());
 
-    // Muat awal
+    // ======================= INIT =======================
+    // Tampilkan laporan bulanan default
     loadLaporan();
 </script>
 </body>
