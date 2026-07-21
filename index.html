@@ -748,6 +748,17 @@
             }
         }
 
+        // ===== FUNGSI MENGGAMBAR ROUNDED RECTANGLE =====
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
+
         // ======================= METADATA FOTO =======================
         async function addMetadataToCanvas(canvasCtx, canvasElement, guruNama, locationInfo) {
             const now = new Date();
@@ -763,6 +774,7 @@
             const w = canvasElement.width;
             const h = canvasElement.height;
 
+            // ---- TOP HEADER ----
             const topH = 72;
             const gradTop = canvasCtx.createLinearGradient(0, 0, 0, topH);
             gradTop.addColorStop(0, 'rgba(0,0,0,0.7)');
@@ -778,6 +790,7 @@
             canvasCtx.font = 'bold 21px system-ui, -apple-system, sans-serif';
             canvasCtx.fillText('Aplikasi Presensi PTK Nurmilad Boarding School', w / 2, 14);
 
+            // ---- BOTTOM INFO (70% dari atas) ----
             const startY = h * 0.70;
             const gradBottom = canvasCtx.createLinearGradient(0, startY - 20, 0, h);
             gradBottom.addColorStop(0, 'rgba(0,0,0,0)');
@@ -786,34 +799,98 @@
             canvasCtx.fillStyle = gradBottom;
             canvasCtx.fillRect(0, startY - 20, w, h - startY + 20);
 
-            canvasCtx.shadowColor = 'rgba(0,0,0,0.9)';
-            canvasCtx.shadowBlur = 8;
-            canvasCtx.fillStyle = '#ffffff';
-            canvasCtx.textAlign = 'left';
-            canvasCtx.textBaseline = 'top';
+            // Matikan shadow sementara untuk bg kotak
+            canvasCtx.shadowColor = 'transparent';
+            canvasCtx.shadowBlur = 0;
 
             let yPos = startY + 10;
-            canvasCtx.font = 'bold 31px system-ui, -apple-system, sans-serif';
-            canvasCtx.fillText(`Absen Masuk ${timeStr}`, 16, yPos);
-            yPos += 37;
+
+            // ---- PRESENSI MASUK (hijau tua) + JAM (biru tua) dalam kotak melengkung ----
+            const label = "Presensi Masuk";
+            const jam = timeStr;
+
+            // Ukuran teks
+            canvasCtx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+            const labelMetrics = canvasCtx.measureText(label);
+            const labelWidth = labelMetrics.width;
+            const jamMetrics = canvasCtx.measureText(jam);
+            const jamWidth = jamMetrics.width;
+
+            const paddingX = 10;
+            const paddingY = 6;
+            const radius = 8;
+            const gap = 8;
+
+            // Kotak hijau untuk label
+            const labelBoxW = labelWidth + paddingX * 2;
+            const labelBoxH = 36; // tinggi tetap
+            const labelX = 16;
+            const labelY = yPos;
+
+            // Kotak biru untuk jam
+            const jamBoxW = jamWidth + paddingX * 2;
+            const jamBoxH = labelBoxH;
+            const jamX = labelX + labelBoxW + gap;
+            const jamY = yPos;
+
+            // Gambar kotak hijau
+            canvasCtx.fillStyle = '#1e7e34'; // hijau tua
+            roundRect(canvasCtx, labelX, labelY, labelBoxW, labelBoxH, radius);
+            canvasCtx.fill();
+
+            // Gambar kotak biru
+            canvasCtx.fillStyle = '#1a4b8c'; // biru tua
+            roundRect(canvasCtx, jamX, jamY, jamBoxW, jamBoxH, radius);
+            canvasCtx.fill();
+
+            // Tulis teks putih di dalam kotak
+            canvasCtx.shadowColor = 'rgba(0,0,0,0.5)';
+            canvasCtx.shadowBlur = 4;
+            canvasCtx.fillStyle = '#ffffff';
+            canvasCtx.textAlign = 'left';
+            canvasCtx.textBaseline = 'middle';
+
+            // Teks label
+            canvasCtx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText(label, labelX + paddingX, labelY + labelBoxH / 2);
+
+            // Teks jam (sedikit lebih besar)
+            canvasCtx.font = 'bold 26px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillText(jam, jamX + paddingX, jamY + jamBoxH / 2);
+
+            // Kembalikan shadow untuk teks berikutnya
+            canvasCtx.shadowColor = 'rgba(0,0,0,0.9)';
+            canvasCtx.shadowBlur = 8;
+
+            // ---- TANGGAL ----
+            yPos = labelY + labelBoxH + 12;
+            canvasCtx.textAlign = 'left';
+            canvasCtx.textBaseline = 'top';
             canvasCtx.font = '20px system-ui, -apple-system, sans-serif';
+            canvasCtx.fillStyle = '#ffffff';
             canvasCtx.fillText(`${dayName}, ${dateStr}`, 16, yPos);
 
+            // ---- LOKASI (alamat) ----
             if (locationText) {
-                yPos += 31;
+                yPos += 30;
                 canvasCtx.font = '18px system-ui, -apple-system, sans-serif';
                 let displayLoc = locationText.length > 45 ? locationText.substring(0, 42) + '...' : locationText;
                 canvasCtx.fillText(displayLoc, 16, yPos);
             }
+
+            // ---- KOORDINAT ----
             if (coordText) {
-                yPos += 31;
+                yPos += (locationText ? 30 : 28);
                 canvasCtx.font = '17px system-ui, -apple-system, sans-serif';
                 canvasCtx.fillText(coordText, 16, yPos);
             }
-            yPos += 33;
+
+            // ---- NAMA GURU ----
+            yPos += (coordText ? 32 : 30);
             canvasCtx.font = 'bold 25px system-ui, -apple-system, sans-serif';
             canvasCtx.fillText(`Nama: ${guruNama}`, 16, yPos);
 
+            // Reset
             canvasCtx.shadowBlur = 0;
             canvasCtx.textAlign = 'left';
             canvasCtx.textBaseline = 'alphabetic';
