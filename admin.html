@@ -3,137 +3,750 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Kelola Data Guru</title>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <title>Admin - Kelola Data</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+    </script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui; }
-        body { background: #eef2ff; padding: 24px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .card { background: white; border-radius: 28px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        h2 { font-size: 1.6rem; margin-bottom: 20px; color: #0f172a; border-left: 6px solid #3b82f6; padding-left: 14px; }
-        .input-group { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
-        input { flex: 2; padding: 12px 18px; border-radius: 60px; border: 1px solid #cbd5e1; font-size: 16px; outline: none; }
-        input:focus { border-color: #3b82f6; }
-        button { background: #3b82f6; border: none; padding: 12px 24px; border-radius: 40px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #2563eb; transform: scale(0.97); }
-        .btn-danger { background: #ef4444; }
-        .btn-danger:hover { background: #dc2626; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #e2e8f0; }
-        th { background: #f8fafc; color: #1e293b; }
-        .actions { display: flex; gap: 8px; }
-        .edit-btn { background: #f59e0b; padding: 6px 12px; font-size: 12px; }
-        .delete-btn { background: #dc2626; padding: 6px 12px; font-size: 12px; }
-        .back-link { display: inline-block; margin-top: 20px; text-decoration: none; background: #334155; padding: 8px 20px; border-radius: 40px; color: white; }
-        @media (max-width: 600px) { .actions { flex-direction: column; } }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: #eef2ff;
+            padding: 16px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            color: #0f172a;
+            border-left: 5px solid #3b82f6;
+            padding-left: 14px;
+        }
+
+        /* ===== TABS ===== */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: #f1f5f9;
+            border-radius: 14px;
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 11px;
+            background: transparent;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-align: center;
+        }
+
+        .tab-btn:hover {
+            background: rgba(59, 130, 246, 0.08);
+            color: #1e293b;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #1e40af;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== FORM ===== */
+        .input-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .input-group input,
+        .input-group select {
+            flex: 2;
+            min-width: 160px;
+            padding: 10px 16px;
+            border-radius: 40px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            outline: none;
+            background: white;
+            transition: border 0.2s;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .input-group .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #475569;
+            border: 1.5px solid #cbd5e1;
+        }
+        .btn-outline:hover {
+            background: #f1f5f9;
+        }
+
+        .btn-sm {
+            padding: 4px 12px;
+            font-size: 0.7rem;
+            border-radius: 30px;
+        }
+
+        /* ===== TABEL ===== */
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 10px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        .actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .badge-empty {
+            color: #94a3b8;
+            text-align: center;
+            padding: 30px 0;
+            font-size: 0.9rem;
+        }
+
+        /* ===== EDIT INLINE ===== */
+        .edit-inline {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .edit-inline input,
+        .edit-inline select {
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1.5px solid #3b82f6;
+            font-size: 0.8rem;
+            outline: none;
+            background: #fff;
+            min-width: 100px;
+        }
+
+        .edit-inline input:focus,
+        .edit-inline select:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .edit-inline .btn {
+            padding: 4px 12px;
+            font-size: 0.7rem;
+            border-radius: 30px;
+        }
+
+        /* ===== BACK LINK ===== */
+        .back-link {
+            display: inline-block;
+            margin-top: 16px;
+            text-decoration: none;
+            background: #475569;
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: white;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        .back-link:hover {
+            background: #334155;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 640px) {
+            body {
+                padding: 10px;
+            }
+            .card {
+                padding: 14px 16px;
+                border-radius: 18px;
+            }
+            .tabs {
+                flex-direction: column;
+                border-radius: 12px;
+            }
+            .tab-btn {
+                text-align: center;
+                padding: 8px 12px;
+                font-size: 0.75rem;
+            }
+            .input-group {
+                flex-direction: column;
+            }
+            .input-group input,
+            .input-group select {
+                flex: 1;
+                width: 100%;
+            }
+            .actions {
+                flex-direction: column;
+                gap: 4px;
+            }
+            .edit-inline {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .edit-inline input,
+            .edit-inline select {
+                width: 100%;
+            }
+            th,
+            td {
+                padding: 6px 6px;
+                font-size: 0.75rem;
+            }
+            .btn-sm {
+                font-size: 0.65rem;
+                padding: 3px 10px;
+            }
+            h2 {
+                font-size: 1.1rem;
+                padding-left: 10px;
+            }
+            .card-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        @media (max-width: 400px) {
+            table {
+                font-size: 0.7rem;
+            }
+            th,
+            td {
+                padding: 4px 4px;
+            }
+            .btn-sm {
+                font-size: 0.55rem;
+                padding: 2px 8px;
+            }
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="card">
-        <h2>👨‍🏫 Manajemen Guru</h2>
-        <div class="input-group">
-            <input type="text" id="namaGuruInput" placeholder="Nama lengkap guru">
-            <button id="tambahBtn">➕ Tambah Guru</button>
+    <div class="container">
+
+        <!-- ===== CARD UTAMA ===== -->
+        <div class="card">
+            <div class="card-header">
+                <h2>⚙️ Panel Admin</h2>
+                <a href="index.html" class="back-link" style="margin-top:0;">← Kembali ke Presensi</a>
+            </div>
+
+            <!-- ===== TABS ===== -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="tab-guru">👨‍🏫 Manajemen Guru</button>
+                <button class="tab-btn" data-tab="tab-riwayat">📋 Riwayat Presensi</button>
+            </div>
+
+            <!-- ===== TAB 1: MANAJEMEN GURU ===== -->
+            <div id="tab-guru" class="tab-content active">
+                <div class="input-group">
+                    <input type="text" id="namaGuruInput" placeholder="Nama lengkap guru">
+                    <button id="tambahBtn" class="btn btn-primary">➕ Tambah Guru</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Nama Guru</th><th style="width:180px;">Aksi</th></tr>
+                        </thead>
+                        <tbody id="listGuru"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== TAB 2: RIWAYAT PRESENSI ===== -->
+            <div id="tab-riwayat" class="tab-content">
+                <div class="input-group" style="margin-bottom:12px;">
+                    <div class="btn-group" style="flex:1; gap:8px; flex-wrap:wrap;">
+                        <button id="refreshRiwayatBtn" class="btn btn-outline" style="flex:1; min-width:100px;">🔄 Refresh</button>
+                        <button id="hapusSemuaBtn" class="btn btn-danger" style="flex:1; min-width:100px;">🗑 Hapus Semua</button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="min-width:100px;">Tanggal</th>
+                                <th style="min-width:80px;">Waktu</th>
+                                <th style="min-width:120px;">Nama Guru</th>
+                                <th style="min-width:160px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listRiwayat"></tbody>
+                    </table>
+                </div>
+                <div id="riwayatEmpty" class="badge-empty">Belum ada data presensi.</div>
+            </div>
+
         </div>
-        <div style="overflow-x: auto;">
-            <table id="tabelGuru">
-                <thead>
-                    <tr><th>Nama Guru</th><th>Aksi</th></tr>
-                </thead>
-                <tbody id="listGuru"></tbody>
-            </table>
-        </div>
-        <a href="index.html" class="back-link">← Kembali ke Presensi</a>
     </div>
-</div>
 
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyA-1YwxMQCOaA15yGn5E_wJlaxna64qhNk",
-        authDomain: "ceklokguru.firebaseapp.com",
-        projectId: "ceklokguru",
-        storageBucket: "ceklokguru.firebasestorage.app",
-        messagingSenderId: "583253273794",
-        appId: "1:583253273794:web:d7d16a57b117baa0de1f5b"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    <script>
+        // ======================= FIREBASE =======================
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-1YwxMQCOaA15yGn5E_wJlaxna64qhNk",
+            authDomain: "ceklokguru.firebaseapp.com",
+            projectId: "ceklokguru",
+            storageBucket: "ceklokguru.firebasestorage.app",
+            messagingSenderId: "583253273794",
+            appId: "1:583253273794:web:d7d16a57b117baa0de1f5b"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-    // Proteksi sederhana: cek login admin dari localStorage
-    if (!localStorage.getItem('adminLogged')) {
-        const pwd = prompt("Akses admin memerlukan password:");
-        if (pwd !== "admin123") {
-            alert("Akses ditolak!");
-            window.location.href = "index.html";
-        } else {
-            localStorage.setItem('adminLogged', 'true');
+        // ======================= PROTEKSI ADMIN =======================
+        if (!localStorage.getItem('adminLogged')) {
+            const pwd = prompt("Akses admin memerlukan password:");
+            if (pwd !== "admin123") {
+                alert("Akses ditolak!");
+                window.location.href = "index.html";
+            } else {
+                localStorage.setItem('adminLogged', 'true');
+            }
         }
-    }
 
-    const namaInput = document.getElementById('namaGuruInput');
-    const tambahBtn = document.getElementById('tambahBtn');
-    const listGuru = document.getElementById('listGuru');
+        // ======================= DOM REFS =======================
+        const namaInput = document.getElementById('namaGuruInput');
+        const tambahBtn = document.getElementById('tambahBtn');
+        const listGuru = document.getElementById('listGuru');
+        const listRiwayat = document.getElementById('listRiwayat');
+        const riwayatEmpty = document.getElementById('riwayatEmpty');
+        const refreshRiwayatBtn = document.getElementById('refreshRiwayatBtn');
+        const hapusSemuaBtn = document.getElementById('hapusSemuaBtn');
 
-    async function loadGuru() {
-        const snapshot = await db.collection('guru').orderBy('nama').get();
-        listGuru.innerHTML = '';
-        snapshot.forEach(doc => {
-            const guru = doc.data();
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${escapeHtml(guru.nama)}</td>
-                <td class="actions">
-                    <button class="edit-btn" data-id="${doc.id}" data-nama="${guru.nama}">✏️ Edit</button>
-                    <button class="delete-btn" data-id="${doc.id}">🗑 Hapus</button>
-                </td>
-            `;
-            listGuru.appendChild(tr);
-        });
-        attachEvents();
-    }
-
-    function attachEvents() {
-        document.querySelectorAll('.edit-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.dataset.id;
-                const oldName = btn.dataset.nama;
-                const newName = prompt("Edit nama guru:", oldName);
-                if (newName && newName.trim()) {
-                    await db.collection('guru').doc(id).update({ nama: newName.trim() });
-                    loadGuru();
+        // ======================= TAB SWITCHING =======================
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(this.dataset.tab).classList.add('active');
+                // Refresh riwayat saat tab dibuka
+                if (this.dataset.tab === 'tab-riwayat') {
+                    loadRiwayat();
                 }
             });
         });
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                if (confirm("Hapus guru ini? Data presensi yang terkait tetap ada.")) {
-                    await db.collection('guru').doc(btn.dataset.id).delete();
-                    loadGuru();
-                }
-            });
-        });
-    }
 
-    tambahBtn.addEventListener('click', async () => {
-        const nama = namaInput.value.trim();
-        if (!nama) return alert("Nama tidak boleh kosong!");
-        await db.collection('guru').add({ nama: nama });
-        namaInput.value = '';
+        // ======================= MANAJEMEN GURU =======================
+        async function loadGuru() {
+            try {
+                const snapshot = await db.collection('guru').orderBy('nama').get();
+                listGuru.innerHTML = '';
+                if (snapshot.empty) {
+                    listGuru.innerHTML =
+                    `<tr><td colspan="2" class="badge-empty">Belum ada guru. Tambahkan sekarang!</td></tr>`;
+                    return;
+                }
+                snapshot.forEach(doc => {
+                    const guru = doc.data();
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(guru.nama)}</td>
+                        <td class="actions">
+                            <button class="btn btn-warning btn-sm edit-guru" data-id="${doc.id}" data-nama="${guru.nama}">✏️ Edit</button>
+                            <button class="btn btn-danger btn-sm delete-guru" data-id="${doc.id}">🗑 Hapus</button>
+                        </td>
+                    `;
+                    listGuru.appendChild(tr);
+                });
+                attachGuruEvents();
+            } catch (err) {
+                console.error(err);
+                listGuru.innerHTML = `<tr><td colspan="2" style="color:#dc2626;">Gagal load guru: ${err.message}</td></tr>`;
+            }
+        }
+
+        function attachGuruEvents() {
+            document.querySelectorAll('.edit-guru').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.dataset.id;
+                    const oldName = btn.dataset.nama;
+                    const newName = prompt("Edit nama guru:", oldName);
+                    if (newName && newName.trim()) {
+                        try {
+                            await db.collection('guru').doc(id).update({ nama: newName.trim() });
+                            loadGuru();
+                        } catch (err) {
+                            alert("Gagal update: " + err.message);
+                        }
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-guru').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (confirm("Hapus guru ini? Data presensi yang terkait tetap ada.")) {
+                        try {
+                            await db.collection('guru').doc(btn.dataset.id).delete();
+                            loadGuru();
+                        } catch (err) {
+                            alert("Gagal hapus: " + err.message);
+                        }
+                    }
+                });
+            });
+        }
+
+        tambahBtn.addEventListener('click', async () => {
+            const nama = namaInput.value.trim();
+            if (!nama) return alert("Nama tidak boleh kosong!");
+            try {
+                await db.collection('guru').add({ nama: nama });
+                namaInput.value = '';
+                loadGuru();
+            } catch (err) {
+                alert("Gagal tambah: " + err.message);
+            }
+        });
+
+        // Enter key untuk tambah guru
+        namaInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') tambahBtn.click();
+        });
+
+        // ======================= RIWAYAT PRESENSI =======================
+        let riwayatData = [];
+
+        async function loadRiwayat() {
+            try {
+                const snapshot = await db.collection('presensi')
+                    .orderBy('tanggal', 'desc')
+                    .orderBy('jamMasuk', 'desc')
+                    .get();
+
+                listRiwayat.innerHTML = '';
+                riwayatData = [];
+
+                if (snapshot.empty) {
+                    riwayatEmpty.style.display = 'block';
+                    listRiwayat.innerHTML = '';
+                    return;
+                }
+                riwayatEmpty.style.display = 'none';
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const item = {
+                        id: doc.id,
+                        tanggal: data.tanggal || '',
+                        jamMasuk: data.jamMasuk || '',
+                        guruNama: data.guruNama || 'Tidak diketahui',
+                        fotoUrl: data.fotoUrl || '',
+                        location: data.location || '',
+                        guruId: data.guruId || ''
+                    };
+                    riwayatData.push(item);
+
+                    const tr = document.createElement('tr');
+                    tr.dataset.id = doc.id;
+                    tr.innerHTML = `
+                        <td><span class="display-tanggal">${escapeHtml(item.tanggal)}</span></td>
+                        <td><span class="display-waktu">${escapeHtml(item.jamMasuk)}</span></td>
+                        <td>${escapeHtml(item.guruNama)}</td>
+                        <td class="actions">
+                            <button class="btn btn-warning btn-sm edit-riwayat" data-id="${doc.id}">✏️ Edit</button>
+                            <button class="btn btn-danger btn-sm delete-riwayat" data-id="${doc.id}">🗑 Hapus</button>
+                        </td>
+                    `;
+                    listRiwayat.appendChild(tr);
+                });
+
+                attachRiwayatEvents();
+            } catch (err) {
+                console.error(err);
+                listRiwayat.innerHTML =
+                `<tr><td colspan="4" style="color:#dc2626;">Gagal load riwayat: ${err.message}</td></tr>`;
+                riwayatEmpty.style.display = 'none';
+            }
+        }
+
+        // ===== EDIT RIWAYAT (INLINE) =====
+        function attachRiwayatEvents() {
+            // Edit
+            document.querySelectorAll('.edit-riwayat').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    const row = this.closest('tr');
+                    const item = riwayatData.find(d => d.id === id);
+                    if (!item) return;
+
+                    const tdTanggal = row.querySelector('.display-tanggal');
+                    const tdWaktu = row.querySelector('.display-waktu');
+
+                    // Ganti dengan input
+                    const currentTanggal = item.tanggal || '';
+                    const currentWaktu = item.jamMasuk || '';
+
+                    tdTanggal.innerHTML = `
+                        <input type="date" class="edit-tanggal-input" value="${currentTanggal}" style="padding:4px 8px; border-radius:16px; border:1.5px solid #3b82f6; font-size:0.8rem; outline:none; width:100%; max-width:140px;">
+                    `;
+                    tdWaktu.innerHTML = `
+                        <input type="time" class="edit-waktu-input" value="${currentWaktu.substring(0,5)}" style="padding:4px 8px; border-radius:16px; border:1.5px solid #3b82f6; font-size:0.8rem; outline:none; width:100%; max-width:100px;">
+                    `;
+
+                    // Ubah tombol
+                    const actionCell = row.querySelector('td:last-child');
+                    actionCell.innerHTML = `
+                        <button class="btn btn-success btn-sm save-riwayat" data-id="${id}">💾 Simpan</button>
+                        <button class="btn btn-outline btn-sm cancel-riwayat" data-id="${id}">✖ Batal</button>
+                    `;
+
+                    // Event simpan
+                    actionCell.querySelector('.save-riwayat').addEventListener('click', async function() {
+                        const newTanggal = row.querySelector('.edit-tanggal-input').value;
+                        const newWaktu = row.querySelector('.edit-waktu-input').value;
+
+                        if (!newTanggal) {
+                            alert("Tanggal harus diisi!");
+                            return;
+                        }
+                        if (!newWaktu) {
+                            alert("Waktu harus diisi!");
+                            return;
+                        }
+
+                        // Format waktu: HH:mm:SS
+                        const waktuParts = newWaktu.split(':');
+                        const jamFormatted = waktuParts.length >= 2 ?
+                            `${waktuParts[0].padStart(2,'0')}:${waktuParts[1].padStart(2,'0')}:00` :
+                            `${newWaktu}:00`;
+
+                        try {
+                            await db.collection('presensi').doc(id).update({
+                                tanggal: newTanggal,
+                                jamMasuk: jamFormatted
+                            });
+                            // Refresh riwayat
+                            await loadRiwayat();
+                        } catch (err) {
+                            alert("Gagal update: " + err.message);
+                        }
+                    });
+
+                    // Event batal
+                    actionCell.querySelector('.cancel-riwayat').addEventListener('click', function() {
+                        loadRiwayat(); // reload ulang
+                    });
+                });
+            });
+
+            // Delete
+            document.querySelectorAll('.delete-riwayat').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const id = this.dataset.id;
+                    const item = riwayatData.find(d => d.id === id);
+                    if (!item) return;
+                    if (confirm(`Hapus presensi untuk "${item.guruNama}" pada ${item.tanggal} ${item.jamMasuk}?`)) {
+                        try {
+                            await db.collection('presensi').doc(id).delete();
+                            await loadRiwayat();
+                        } catch (err) {
+                            alert("Gagal hapus: " + err.message);
+                        }
+                    }
+                });
+            });
+        }
+
+        // ===== HAPUS SEMUA RIWAYAT =====
+        hapusSemuaBtn.addEventListener('click', async () => {
+            if (riwayatData.length === 0) {
+                alert("Tidak ada data untuk dihapus.");
+                return;
+            }
+            const confirmMsg =
+                `Yakin ingin menghapus SEMUA data presensi (${riwayatData.length} record)?\nAksi ini tidak dapat dibatalkan!`;
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                const batch = db.batch();
+                riwayatData.forEach(item => {
+                    const ref = db.collection('presensi').doc(item.id);
+                    batch.delete(ref);
+                });
+                await batch.commit();
+                await loadRiwayat();
+                alert(`Berhasil menghapus ${riwayatData.length} data.`);
+            } catch (err) {
+                alert("Gagal menghapus: " + err.message);
+            }
+        });
+
+        // ===== REFRESH =====
+        refreshRiwayatBtn.addEventListener('click', loadRiwayat);
+
+        // ======================= UTILITY =======================
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        // ======================= LOAD INITIAL =======================
         loadGuru();
-    });
+        // Riwayat akan dimuat saat tab diklik (atau bisa preload)
+        // Tapi kita load awal untuk tab yang aktif (guru)
+        // Jika tab riwayat yang aktif, load juga
+        if (document.querySelector('#tab-riwayat').classList.contains('active')) {
+            loadRiwayat();
+        }
 
-    function escapeHtml(str) {
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-
-    loadGuru();
-</script>
+        // ===== TOMBOL ENTER UNTUK INPUT GURU =====
+        // sudah diatas
+    </script>
 </body>
 </html>
