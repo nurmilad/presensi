@@ -559,9 +559,9 @@
 
         async function loadRiwayat() {
             try {
+                // ✅ PERBAIKAN: Hanya gunakan satu orderBy agar TIDAK PERLU INDEX COMPOSITE
                 const snapshot = await db.collection('presensi')
                     .orderBy('tanggal', 'desc')
-                    .orderBy('jamMasuk', 'desc')
                     .get();
 
                 listRiwayat.innerHTML = '';
@@ -738,15 +738,16 @@
 
         // ======================= LOAD INITIAL =======================
         loadGuru();
-        // Riwayat akan dimuat saat tab diklik (atau bisa preload)
-        // Tapi kita load awal untuk tab yang aktif (guru)
-        // Jika tab riwayat yang aktif, load juga
+        // Jika tab riwayat aktif saat load (misalnya default), muat juga
         if (document.querySelector('#tab-riwayat').classList.contains('active')) {
             loadRiwayat();
         }
 
-        // ===== TOMBOL ENTER UNTUK INPUT GURU =====
-        // sudah diatas
+        // Biar lebih praktis: preload riwayat di latar belakang agar cepat saat tab di klik
+        // Tapi kita tunggu sampai user klik tab biar ga berat
+        // Saya tambahkan event listener untuk pertama kali tab di klik sudah ada di atas.
+
+        console.log("Admin panel siap. Tidak perlu membuat index composite!");
     </script>
 </body>
 </html>
